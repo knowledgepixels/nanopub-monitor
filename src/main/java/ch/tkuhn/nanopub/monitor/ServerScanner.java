@@ -1,7 +1,6 @@
 package ch.tkuhn.nanopub.monitor;
 
 import java.io.BufferedReader;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Duration;
 import java.util.Random;
@@ -14,17 +13,9 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.wicket.util.thread.ICode;
 import org.apache.wicket.util.thread.Task;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.nanopub.Nanopub;
-import org.nanopub.NanopubImpl;
-import org.nanopub.extra.server.NanopubServerUtils;
-import org.nanopub.extra.server.ServerInfo;
-import org.nanopub.trusty.TrustyNanopubUtils;
 import org.slf4j.Logger;
 
 import com.opencsv.CSVReader;
-
-import net.trustyuri.TrustyUriUtils;
 
 public class ServerScanner implements ICode {
 
@@ -70,51 +61,52 @@ public class ServerScanner implements ICode {
 		for (ServerData d : ServerList.get().getServerData()) {
 			logger.info("Testing server " + d.getServiceId() + "...");
 			stillAlive();
-			if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
-				ServerInfo i = (ServerInfo) d.getServerInfo();
-				if (i == null) {
-					d.reportTestFailure("DOWN");
-					continue;
-				}
-				if (i.getNextNanopubNo() == 0) continue;
-				try {
-					long npNo = (long) (random.nextDouble() * (i.getNextNanopubNo()));
-					logger.info("Trying to retrieve nanopub number " + npNo);
-					int pageNo = (int) (npNo / i.getPageSize()) + 1;
-					int rowNo = (int) (npNo % i.getPageSize());
-					int r = 0;
-					for (String nanopubUri : NanopubServerUtils.loadNanopubUriList(i, pageNo)) {
-						if (rowNo < r) {
-							r++;
-							continue;
-						}
-						String ac = TrustyUriUtils.getArtifactCode(nanopubUri);
-						HttpGet get = new HttpGet(i.getPublicUrl() + ac);
-						get.setHeader("Accept", "application/trig");
-						StopWatch watch = new StopWatch();
-						watch.start();
-						HttpResponse resp = c.execute(get);
-						watch.stop();
-						if (!wasSuccessful(resp)) {
-							logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
-							d.reportTestFailure("DOWN");
-						} else {
-							InputStream in = resp.getEntity().getContent();
-							Nanopub np = new NanopubImpl(in, RDFFormat.TRIG);
-							if (TrustyNanopubUtils.isValidTrustyNanopub(np)) {
-								d.reportTestSuccess(watch.getTime());
-							} else {
-								logger.info("Test failed. Not a trusty nanopub: " + np.getUri());
-								d.reportTestFailure("BROKEN");
-							}
-						}
-						break;
-					}
-				} catch (Exception ex) {
-					ex.printStackTrace();
-					d.reportTestFailure("INACCESSIBLE");
-				}
-			} else if (d.hasServiceType(NanopubService.GRLC_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_GRLC_SERVICE_TYPE_IRI)) {
+//			if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
+//				ServerInfo i = (ServerInfo) d.getServerInfo();
+//				if (i == null) {
+//					d.reportTestFailure("DOWN");
+//					continue;
+//				}
+//				if (i.getNextNanopubNo() == 0) continue;
+//				try {
+//					long npNo = (long) (random.nextDouble() * (i.getNextNanopubNo()));
+//					logger.info("Trying to retrieve nanopub number " + npNo);
+//					int pageNo = (int) (npNo / i.getPageSize()) + 1;
+//					int rowNo = (int) (npNo % i.getPageSize());
+//					int r = 0;
+//					for (String nanopubUri : NanopubServerUtils.loadNanopubUriList(i, pageNo)) {
+//						if (rowNo < r) {
+//							r++;
+//							continue;
+//						}
+//						String ac = TrustyUriUtils.getArtifactCode(nanopubUri);
+//						HttpGet get = new HttpGet(i.getPublicUrl() + ac);
+//						get.setHeader("Accept", "application/trig");
+//						StopWatch watch = new StopWatch();
+//						watch.start();
+//						HttpResponse resp = c.execute(get);
+//						watch.stop();
+//						if (!wasSuccessful(resp)) {
+//							logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+//							d.reportTestFailure("DOWN");
+//						} else {
+//							InputStream in = resp.getEntity().getContent();
+//							Nanopub np = new NanopubImpl(in, RDFFormat.TRIG);
+//							if (TrustyNanopubUtils.isValidTrustyNanopub(np)) {
+//								d.reportTestSuccess(watch.getTime());
+//							} else {
+//								logger.info("Test failed. Not a trusty nanopub: " + np.getUri());
+//								d.reportTestFailure("BROKEN");
+//							}
+//						}
+//						break;
+//					}
+//				} catch (Exception ex) {
+//					ex.printStackTrace();
+//					d.reportTestFailure("INACCESSIBLE");
+//				}
+//			} else
+			if (d.hasServiceType(NanopubService.GRLC_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_GRLC_SERVICE_TYPE_IRI)) {
 				logger.info("Trying to access " + d.getServiceId() + "get_nanopub_count...");
 				try {
 					HttpGet get = new HttpGet(d.getServiceId() + "get_nanopub_count");

@@ -10,8 +10,6 @@ import java.util.Map;
 
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.nanopub.extra.server.ServerInfo;
-import org.nanopub.extra.server.ServerIterator;
 import org.nanopub.extra.services.ApiResponse;
 import org.nanopub.extra.services.ApiResponseEntry;
 import org.nanopub.extra.services.QueryAccess;
@@ -77,31 +75,10 @@ public class ServerList implements Serializable {
 	}
 
 	public void refresh() {
-		refreshFromNanopubServerPeers();
 		refreshFromApi();
     }
 
 	private static final ValueFactory vf = SimpleValueFactory.getInstance();
-
-	private void refreshFromNanopubServerPeers() {
-		ServerIterator serverIterator = new ServerIterator();
-		while (serverIterator.hasNext()) {
-			ServerInfo si = serverIterator.next();
-			NanopubService s = new NanopubService(vf.createIRI(si.getPublicUrl()), NanopubService.NANOPUB_SERVER_TYPE_IRI);
-			try {
-				if (servers.containsKey(s)) {
-					servers.get(s).update(si);
-				} else {
-					servers.put(s, new ServerData(s, si));
-				}
-			} catch (Exception ex) {
-				ex.printStackTrace();
-				if (servers.containsKey(s)) {
-					servers.get(s).update(null);
-				}
-			}
-		}
-	}
 
 	private void refreshFromApi() {
 		try {

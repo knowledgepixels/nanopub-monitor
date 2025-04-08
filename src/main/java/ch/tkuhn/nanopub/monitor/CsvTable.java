@@ -25,7 +25,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
 	public IResource get() {
 		StringWriter sw = new StringWriter();
 		CSVWriter w = new CSVWriter(sw);
-		w.writeNext(new String[] {"URL", "Type", "Status", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location", "Parameters", "Description"});
+		w.writeNext(new String[] {"URL", "Type", "Status", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
 		for (ServerData sd : ServerList.get().getSortedServerData()) {
 			Float sr = sd.getSuccessRatio();
 			Integer rt = sd.getAvgResponseTimeInMs();
@@ -41,8 +41,6 @@ public class CsvTable implements SerializableSupplier<IResource> {
 					MonitorPage.formatDate(sd.getLastSeenDate()),
 					(i == null ? "" : i.getIp()),
 					(i == null ? "" : i.getCity() + ", " + i.getCountryName()),
-					sd.getParameterString(),
-					sd.getDescription()
 				});
 		}
 		try {

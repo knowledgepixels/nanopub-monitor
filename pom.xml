@@ -28,6 +28,14 @@
 		<!-- allowed values: R7, 1.0, 1.5, 2.0 or none -->
 		<wtp.version>none</wtp.version>
 	</properties>
+
+  <repositories>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -46,11 +54,19 @@
 			<version>${wicket.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.nanopub</groupId>
-			<artifactId>nanopub</artifactId>
-			<version>1.67</version>
-		</dependency>
+
+    <!--    <dependency>-->
+    <!--      <groupId>org.nanopub</groupId>-->
+    <!--      <artifactId>nanopub</artifactId>-->
+    <!--      <version>1.70-snapshot</version>-->
+    <!--    </dependency>-->
+    <!-- Temporary: dependency on Jitpack for snapshot builds -->
+    <dependency>
+      <groupId>com.github.Nanopublication</groupId>
+      <artifactId>nanopub-java</artifactId>
+      <version>40a757163ca02beeddc80b66b95eda8b93f19d08</version>
+    </dependency>
+
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
@@ -124,16 +140,4 @@
 		</plugins>
 	</build>
 
-	<repositories>
-		<repository>
-			<id>Apache Nexus</id>
-			<url>https://repository.apache.org/content/repositories/snapshots/</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
 	</project>

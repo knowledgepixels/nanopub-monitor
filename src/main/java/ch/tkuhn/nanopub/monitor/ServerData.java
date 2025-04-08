@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.nanopub.extra.server.ServerInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,24 +165,6 @@ public class ServerData implements Serializable {
 		Double sLng = serverIpInfo.getLongitude();
 		if (sLat == null || sLng == null) return null;
 		return (int) calculateDistance(sLat, sLng, monitorIpInfo.getLatitude(), monitorIpInfo.getLongitude());
-	}
-
-	public String getParameterString() {
-		if (info instanceof ServerInfo) {
-			ServerInfo si = (ServerInfo) info;
-			String s = " / ";
-			if (si.getUriPattern() != null) s = si.getUriPattern() + s;
-			if (si.getHashPattern() != null) s = s + si.getHashPattern();
-			return s;
-		}
-		return "";
-	}
-
-	public String getDescription() {
-		if (info instanceof ServerInfo) {
-			return ((ServerInfo) info).getDescription();
-		}
-		return "";
 	}
 
 	private static Map<String,ServerIpInfo> ipInfoMap = new HashMap<>();
