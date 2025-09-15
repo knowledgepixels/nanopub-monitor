@@ -10,10 +10,10 @@ Raphael("map", 1000, 400, function () {
   }
   var world = r.setFinish();
   world.getXY = function (lat, lon) {
-     return {
-       cx: lon * 2.6938 + 465.4,
-       cy: lat * -2.6938 + 227.066
-     };
+    return {
+      cx: lon * 2.6938 + 465.4,
+      cy: lat * -2.6938 + 227.066
+    };
   };
   world.getLatLon = function (x, y) {
     return {
@@ -28,22 +28,22 @@ Raphael("map", 1000, 400, function () {
   };
   var dot = r.circle();
 
-  function go(attr,color,offset){
-    if(attr.cx && attr.cy){
+  function go(attr, color, offset) {
+    if (attr.cx && attr.cy) {
 
-       dot.paper.add([{
-           type: "circle",
-           cx: attr.cx + offset[0],
-           cy: attr.cy + offset[1],
-           r: 4
-       }]).attr({"stroke": "#000", "stroke-width": "0.5px","fill":color});
+      dot.paper.add([{
+        type: "circle",
+        cx: attr.cx + offset[0],
+        cy: attr.cy + offset[1],
+        r: 4
+      }]).attr({"stroke": "#000", "stroke-width": "0.5px", "fill": color});
 
     }
   }
 
-  for (var i=0;i<points.length;i++){ 
+  for (var i = 0; i < points.length; i++) {
     var txt = points[i][0];
     var attr = world.parseLatLon(txt);
-    go(attr,points[i][1],points[i][2]);
+    go(attr, points[i][1], points[i][2]);
   }
 });

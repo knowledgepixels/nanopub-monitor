@@ -1,10 +1,6 @@
 package ch.tkuhn.nanopub.monitor;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.time.Duration;
-import java.util.Random;
-
+import com.opencsv.CSVReader;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -15,52 +11,55 @@ import org.apache.wicket.util.thread.ICode;
 import org.apache.wicket.util.thread.Task;
 import org.slf4j.Logger;
 
-import com.opencsv.CSVReader;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.time.Duration;
+import java.util.Random;
 
 public class ServerScanner implements ICode {
 
-	private static ServerScanner singleton;
-	private static Task scanTask;
-	private static Random random = new Random();
+    private static ServerScanner singleton;
+    private static Task scanTask;
+    private static Random random = new Random();
 
-	public static void initDaemon() {
-		if (singleton != null) {
-			if (singleton.aliveAtTime + 10 * 60 * 1000 < System.currentTimeMillis()) {
-				singleton.logger.info("No sign of life of the daemon for 10 minutes. Starting new one.");
-				singleton = null;
-				scanTask.interrupt();
-			} else {
-				return;
-			}
-		}
-		scanTask = new Task("server-scanner");
-		scanTask.setDaemon(true);
-		singleton = new ServerScanner();
-		scanTask.run(Duration.ofSeconds(MonitorConf.get().getScanFreq()), singleton);
-	}
+    public static void initDaemon() {
+        if (singleton != null) {
+            if (singleton.aliveAtTime + 10 * 60 * 1000 < System.currentTimeMillis()) {
+                singleton.logger.info("No sign of life of the daemon for 10 minutes. Starting new one.");
+                singleton = null;
+                scanTask.interrupt();
+            } else {
+                return;
+            }
+        }
+        scanTask = new Task("server-scanner");
+        scanTask.setDaemon(true);
+        singleton = new ServerScanner();
+        scanTask.run(Duration.ofSeconds(MonitorConf.get().getScanFreq()), singleton);
+    }
 
-	private Logger logger;
-	private long aliveAtTime;
+    private Logger logger;
+    private long aliveAtTime;
 
-	private ServerScanner() {
-		stillAlive();
-	}
+    private ServerScanner() {
+        stillAlive();
+    }
 
-	@Override
-	public void run(Logger logger) {
-		this.logger = logger;
-		logger.info("Scan servers...");
-		ServerList.get().refresh();
-		stillAlive();
-		testServers();
-	}
+    @Override
+    public void run(Logger logger) {
+        this.logger = logger;
+        logger.info("Scan servers...");
+        ServerList.get().refresh();
+        stillAlive();
+        testServers();
+    }
 
-	private void testServers() {
-		RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(10 * 1000).build();
-		HttpClient c = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
-		for (ServerData d : ServerList.get().getServerData()) {
-			logger.info("Testing server " + d.getServiceId() + "...");
-			stillAlive();
+    private void testServers() {
+        RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(10 * 1000).build();
+        HttpClient c = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+        for (ServerData d : ServerList.get().getServerData()) {
+            logger.info("Testing server " + d.getServiceId() + "...");
+            stillAlive();
 //			if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
 //				ServerInfo i = (ServerInfo) d.getServerInfo();
 //				if (i == null) {
@@ -106,194 +105,195 @@ public class ServerScanner implements ICode {
 //					d.reportTestFailure("INACCESSIBLE");
 //				}
 //			} else
-			if (d.hasServiceType(NanopubService.GRLC_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_GRLC_SERVICE_TYPE_IRI)) {
-				logger.info("Trying to access " + d.getServiceId() + "get_nanopub_count...");
-				try {
-					HttpGet get = new HttpGet(d.getServiceId() + "get_nanopub_count");
-					get.setHeader("Accept", "text/csv");
-					StopWatch watch = new StopWatch();
-					watch.start();
-					HttpResponse resp = c.execute(get);
-					watch.stop();
-					if (!wasSuccessful(resp)) {
-						logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
-						d.reportTestFailure("DOWN");
-					} else {
-						CSVReader csvReader = null;
-						try {
-							csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
-							String[] line = null;
-							int n = 0;
-							while ((line = csvReader.readNext()) != null) {
-								n++;
-								if (n == 1) {
-									// ignore header line
-								} else {
-									if (line[0].matches("[0-9]{5,}")) {
-										d.reportTestSuccess(watch.getTime());
-									} else {
-										d.reportTestFailure("BROKEN");
-									}
-									break;
-								}
-							}
-						} catch (Exception ex) {
-							logger.info("Test failed. Exception: " + ex.getMessage());
-							d.reportTestFailure("BROKEN");
-						} finally {
-							if (csvReader != null) csvReader.close();
-						}
-					}
-				} catch (Exception ex) {
-					ex.printStackTrace();
-					d.reportTestFailure("INACCESSIBLE");
-				}
-			} else if (d.hasServiceType(NanopubService.LDF_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_LDF_SERVICE_TYPE_IRI)) {
-				logger.info("Trying to access " + d.getServiceId() + "?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication...");
-				try {
-					HttpGet get = new HttpGet(d.getServiceId() + "?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication");
-					get.setHeader("Accept", "application/n-quads");
-					StopWatch watch = new StopWatch();
-					watch.start();
-					HttpResponse resp = c.execute(get);
-					watch.stop();
-					if (!wasSuccessful(resp)) {
-						logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
-						d.reportTestFailure("DOWN");
-					} else {
-						BufferedReader reader = null;
-						try {
-							reader = new BufferedReader(new InputStreamReader(resp.getEntity().getContent()));
-							String line = null;
-							int count = 0;
-							while ((line = reader.readLine()) != null) {
-								if (line.contains(" <http://www.nanopub.org/nschema#Nanopublication> ")) count = count + 1;
-							}
-							if (count >= 100) {
-								d.reportTestSuccess(watch.getTime());
-							} else {
-								d.reportTestFailure("BROKEN");
-							}
-						} catch (Exception ex) {
-							logger.info("Test failed. Exception: " + ex.getMessage());
-							d.reportTestFailure("BROKEN");
-						} finally {
-							if (reader != null) reader.close();
-						}
-					}
-				} catch (Exception ex) {
-					ex.printStackTrace();
-					d.reportTestFailure("INACCESSIBLE");
-				}
-			} else if (d.hasServiceType(NanopubService.SIGNED_SPARQL_SERVICE_TYPE_IRI)) {
-				String urlSuffix = "?query=select+%3Fx+where+%7B%3Fx+a+%3Fc%7D+limit+100&format=text%2Fcsv";
-				logger.info("Trying to access " + d.getServiceId() + urlSuffix + "...");
-				try {
-					HttpGet get = new HttpGet(d.getServiceId() + urlSuffix);
-					get.setHeader("Accept", "text/csv");
-					StopWatch watch = new StopWatch();
-					watch.start();
-					HttpResponse resp = c.execute(get);
-					watch.stop();
-					if (!wasSuccessful(resp)) {
-						logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
-						d.reportTestFailure("DOWN");
-					} else {
-						CSVReader csvReader = null;
-						try {
-							csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
-							String[] line;
-							int count = 0;
-							while ((csvReader.readNext()) != null) {
-								count++;
-							}
-							if (count >= 100) {
-								d.reportTestSuccess(watch.getTime());
-							} else {
-								d.reportTestFailure("BROKEN");
-							}
-						} catch (Exception ex) {
-							logger.info("Test failed. Exception: " + ex.getMessage());
-							d.reportTestFailure("BROKEN");
-						} finally {
-							if (csvReader != null) csvReader.close();
-						}
-					}
-				} catch (Exception ex) {
-					ex.printStackTrace();
-					d.reportTestFailure("INACCESSIBLE");
-				}
-			} else if (d.hasServiceType(NanopubService.NANOPUB_MONITOR_TYPE_IRI)) {
-				logger.info("Trying to access " + d.getServiceId() + ".csv...");
-				try {
-					HttpGet get = new HttpGet(d.getServiceId() + ".csv");
-					get.setHeader("Accept", "text/csv");
-					StopWatch watch = new StopWatch();
-					watch.start();
-					HttpResponse resp = c.execute(get);
-					watch.stop();
-					if (!wasSuccessful(resp)) {
-						logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
-						d.reportTestFailure("DOWN");
-					} else {
-						CSVReader csvReader = null;
-						try {
-							csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
-							String[] line = null;
-							int n = 0;
-							while ((line = csvReader.readNext()) != null) {
-								n++;
-								if (n == 1) {
-									// ignore header line
-								} else {
-									if (line[0].startsWith("http")) {
-										d.reportTestSuccess(watch.getTime());
-									} else {
-										d.reportTestFailure("BROKEN");
-									}
-									break;
-								}
-							}
-						} catch (Exception ex) {
-							logger.info("Test failed. Exception: " + ex.getMessage());
-							d.reportTestFailure("BROKEN");
-						} finally {
-							if (csvReader != null) csvReader.close();
-						}
-					}
-				} catch (Exception ex) {
-					ex.printStackTrace();
-					d.reportTestFailure("INACCESSIBLE");
-				}
-			} else {
-				logger.info("Trying to access " + d.getServiceId() + "...");
-				try {
-					HttpGet get = new HttpGet(d.getServiceId());
-					StopWatch watch = new StopWatch();
-					watch.start();
-					HttpResponse resp = c.execute(get);
-					watch.stop();
-					if (!wasSuccessful(resp)) {
-						logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
-						d.reportTestFailure("DOWN");
-					} else {
-						d.reportTestSuccess(watch.getTime());
-					}
-				} catch (Exception ex) {
-					ex.printStackTrace();
-					d.reportTestFailure("INACCESSIBLE");
-				}
-			}
-		}
-	}
+            if (d.hasServiceType(NanopubService.GRLC_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_GRLC_SERVICE_TYPE_IRI)) {
+                logger.info("Trying to access " + d.getServiceId() + "get_nanopub_count...");
+                try {
+                    HttpGet get = new HttpGet(d.getServiceId() + "get_nanopub_count");
+                    get.setHeader("Accept", "text/csv");
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    HttpResponse resp = c.execute(get);
+                    watch.stop();
+                    if (!wasSuccessful(resp)) {
+                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        d.reportTestFailure("DOWN");
+                    } else {
+                        CSVReader csvReader = null;
+                        try {
+                            csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
+                            String[] line = null;
+                            int n = 0;
+                            while ((line = csvReader.readNext()) != null) {
+                                n++;
+                                if (n == 1) {
+                                    // ignore header line
+                                } else {
+                                    if (line[0].matches("[0-9]{5,}")) {
+                                        d.reportTestSuccess(watch.getTime());
+                                    } else {
+                                        d.reportTestFailure("BROKEN");
+                                    }
+                                    break;
+                                }
+                            }
+                        } catch (Exception ex) {
+                            logger.info("Test failed. Exception: " + ex.getMessage());
+                            d.reportTestFailure("BROKEN");
+                        } finally {
+                            if (csvReader != null) csvReader.close();
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    d.reportTestFailure("INACCESSIBLE");
+                }
+            } else if (d.hasServiceType(NanopubService.LDF_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_LDF_SERVICE_TYPE_IRI)) {
+                logger.info("Trying to access " + d.getServiceId() + "?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication...");
+                try {
+                    HttpGet get = new HttpGet(d.getServiceId() + "?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication");
+                    get.setHeader("Accept", "application/n-quads");
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    HttpResponse resp = c.execute(get);
+                    watch.stop();
+                    if (!wasSuccessful(resp)) {
+                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        d.reportTestFailure("DOWN");
+                    } else {
+                        BufferedReader reader = null;
+                        try {
+                            reader = new BufferedReader(new InputStreamReader(resp.getEntity().getContent()));
+                            String line = null;
+                            int count = 0;
+                            while ((line = reader.readLine()) != null) {
+                                if (line.contains(" <http://www.nanopub.org/nschema#Nanopublication> "))
+                                    count = count + 1;
+                            }
+                            if (count >= 100) {
+                                d.reportTestSuccess(watch.getTime());
+                            } else {
+                                d.reportTestFailure("BROKEN");
+                            }
+                        } catch (Exception ex) {
+                            logger.info("Test failed. Exception: " + ex.getMessage());
+                            d.reportTestFailure("BROKEN");
+                        } finally {
+                            if (reader != null) reader.close();
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    d.reportTestFailure("INACCESSIBLE");
+                }
+            } else if (d.hasServiceType(NanopubService.SIGNED_SPARQL_SERVICE_TYPE_IRI)) {
+                String urlSuffix = "?query=select+%3Fx+where+%7B%3Fx+a+%3Fc%7D+limit+100&format=text%2Fcsv";
+                logger.info("Trying to access " + d.getServiceId() + urlSuffix + "...");
+                try {
+                    HttpGet get = new HttpGet(d.getServiceId() + urlSuffix);
+                    get.setHeader("Accept", "text/csv");
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    HttpResponse resp = c.execute(get);
+                    watch.stop();
+                    if (!wasSuccessful(resp)) {
+                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        d.reportTestFailure("DOWN");
+                    } else {
+                        CSVReader csvReader = null;
+                        try {
+                            csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
+                            String[] line;
+                            int count = 0;
+                            while ((csvReader.readNext()) != null) {
+                                count++;
+                            }
+                            if (count >= 100) {
+                                d.reportTestSuccess(watch.getTime());
+                            } else {
+                                d.reportTestFailure("BROKEN");
+                            }
+                        } catch (Exception ex) {
+                            logger.info("Test failed. Exception: " + ex.getMessage());
+                            d.reportTestFailure("BROKEN");
+                        } finally {
+                            if (csvReader != null) csvReader.close();
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    d.reportTestFailure("INACCESSIBLE");
+                }
+            } else if (d.hasServiceType(NanopubService.NANOPUB_MONITOR_TYPE_IRI)) {
+                logger.info("Trying to access " + d.getServiceId() + ".csv...");
+                try {
+                    HttpGet get = new HttpGet(d.getServiceId() + ".csv");
+                    get.setHeader("Accept", "text/csv");
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    HttpResponse resp = c.execute(get);
+                    watch.stop();
+                    if (!wasSuccessful(resp)) {
+                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        d.reportTestFailure("DOWN");
+                    } else {
+                        CSVReader csvReader = null;
+                        try {
+                            csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
+                            String[] line = null;
+                            int n = 0;
+                            while ((line = csvReader.readNext()) != null) {
+                                n++;
+                                if (n == 1) {
+                                    // ignore header line
+                                } else {
+                                    if (line[0].startsWith("http")) {
+                                        d.reportTestSuccess(watch.getTime());
+                                    } else {
+                                        d.reportTestFailure("BROKEN");
+                                    }
+                                    break;
+                                }
+                            }
+                        } catch (Exception ex) {
+                            logger.info("Test failed. Exception: " + ex.getMessage());
+                            d.reportTestFailure("BROKEN");
+                        } finally {
+                            if (csvReader != null) csvReader.close();
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    d.reportTestFailure("INACCESSIBLE");
+                }
+            } else {
+                logger.info("Trying to access " + d.getServiceId() + "...");
+                try {
+                    HttpGet get = new HttpGet(d.getServiceId());
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    HttpResponse resp = c.execute(get);
+                    watch.stop();
+                    if (!wasSuccessful(resp)) {
+                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        d.reportTestFailure("DOWN");
+                    } else {
+                        d.reportTestSuccess(watch.getTime());
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    d.reportTestFailure("INACCESSIBLE");
+                }
+            }
+        }
+    }
 
-	private boolean wasSuccessful(HttpResponse resp) {
-		int c = resp.getStatusLine().getStatusCode();
-		return c >= 200 && c < 300;
-	}
+    private boolean wasSuccessful(HttpResponse resp) {
+        int c = resp.getStatusLine().getStatusCode();
+        return c >= 200 && c < 300;
+    }
 
-	private void stillAlive() {
-		aliveAtTime = System.currentTimeMillis();
-	}
+    private void stillAlive() {
+        aliveAtTime = System.currentTimeMillis();
+    }
 
 }

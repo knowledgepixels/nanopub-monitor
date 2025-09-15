@@ -6,15 +6,15 @@ import org.apache.wicket.request.resource.ResourceReference;
 
 public class MonitorApplication extends WebApplication {
 
-	@Override
-	public Class<? extends WebPage> getHomePage() {
-		return MonitorPage.class;
-	}
+    @Override
+    public Class<? extends WebPage> getHomePage() {
+        return MonitorPage.class;
+    }
 
-	public void init() {
-		super.init();
-		mountResource(".csv", ResourceReference.of("csv", CsvTable.instance()));
-		getCspSettings().blocking().disabled();
-	}
+    public void init() {
+        super.init();
+        mountResource(".csv", ResourceReference.of("csv", CsvTable.instance()));
+        getCspSettings().blocking().disabled();
+    }
 
 }
