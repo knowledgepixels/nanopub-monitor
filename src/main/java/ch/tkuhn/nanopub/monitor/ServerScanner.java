@@ -58,7 +58,7 @@ public class ServerScanner implements ICode {
         RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(10 * 1000).build();
         HttpClient c = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
         for (ServerData d : ServerList.get().getServerData()) {
-            logger.info("Testing server " + d.getServiceId() + "...");
+            logger.info("Testing server {}...", d.getServiceId());
             stillAlive();
 //			if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
 //				ServerInfo i = (ServerInfo) d.getServerInfo();
@@ -106,7 +106,7 @@ public class ServerScanner implements ICode {
 //				}
 //			} else
             if (d.hasServiceType(NanopubService.GRLC_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_GRLC_SERVICE_TYPE_IRI)) {
-                logger.info("Trying to access " + d.getServiceId() + "get_nanopub_count...");
+                logger.info("Trying to access {}get_nanopub_count...", d.getServiceId());
                 try {
                     HttpGet get = new HttpGet(d.getServiceId() + "get_nanopub_count");
                     get.setHeader("Accept", "text/csv");
@@ -115,7 +115,7 @@ public class ServerScanner implements ICode {
                     HttpResponse resp = c.execute(get);
                     watch.stop();
                     if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
                         d.reportTestFailure("DOWN");
                     } else {
                         CSVReader csvReader = null;
@@ -137,18 +137,18 @@ public class ServerScanner implements ICode {
                                 }
                             }
                         } catch (Exception ex) {
-                            logger.info("Test failed. Exception: " + ex.getMessage());
+                            logger.info("Test failed. Exception: {}", ex.getMessage());
                             d.reportTestFailure("BROKEN");
                         } finally {
                             if (csvReader != null) csvReader.close();
                         }
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+                    logger.error("Test failed. Exception: {}", ex.getMessage());
                     d.reportTestFailure("INACCESSIBLE");
                 }
             } else if (d.hasServiceType(NanopubService.LDF_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_LDF_SERVICE_TYPE_IRI)) {
-                logger.info("Trying to access " + d.getServiceId() + "?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication...");
+                logger.info("Trying to access {}?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication...", d.getServiceId());
                 try {
                     HttpGet get = new HttpGet(d.getServiceId() + "?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication");
                     get.setHeader("Accept", "application/n-quads");
@@ -157,7 +157,7 @@ public class ServerScanner implements ICode {
                     HttpResponse resp = c.execute(get);
                     watch.stop();
                     if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
                         d.reportTestFailure("DOWN");
                     } else {
                         BufferedReader reader = null;
@@ -175,19 +175,19 @@ public class ServerScanner implements ICode {
                                 d.reportTestFailure("BROKEN");
                             }
                         } catch (Exception ex) {
-                            logger.info("Test failed. Exception: " + ex.getMessage());
+                            logger.info("Test failed. Exception: {}", ex.getMessage());
                             d.reportTestFailure("BROKEN");
                         } finally {
                             if (reader != null) reader.close();
                         }
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+                    logger.error("Test failed. Exception: {}", ex.getMessage());
                     d.reportTestFailure("INACCESSIBLE");
                 }
             } else if (d.hasServiceType(NanopubService.SIGNED_SPARQL_SERVICE_TYPE_IRI)) {
                 String urlSuffix = "?query=select+%3Fx+where+%7B%3Fx+a+%3Fc%7D+limit+100&format=text%2Fcsv";
-                logger.info("Trying to access " + d.getServiceId() + urlSuffix + "...");
+                logger.info("Trying to access {}{}...", d.getServiceId(), urlSuffix);
                 try {
                     HttpGet get = new HttpGet(d.getServiceId() + urlSuffix);
                     get.setHeader("Accept", "text/csv");
@@ -196,7 +196,7 @@ public class ServerScanner implements ICode {
                     HttpResponse resp = c.execute(get);
                     watch.stop();
                     if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
                         d.reportTestFailure("DOWN");
                     } else {
                         CSVReader csvReader = null;
@@ -213,18 +213,18 @@ public class ServerScanner implements ICode {
                                 d.reportTestFailure("BROKEN");
                             }
                         } catch (Exception ex) {
-                            logger.info("Test failed. Exception: " + ex.getMessage());
+                            logger.error("Test failed. Exception: {}", ex.getMessage());
                             d.reportTestFailure("BROKEN");
                         } finally {
                             if (csvReader != null) csvReader.close();
                         }
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+                    logger.error("Test failed. Exception: {}", ex.getMessage());
                     d.reportTestFailure("INACCESSIBLE");
                 }
             } else if (d.hasServiceType(NanopubService.NANOPUB_MONITOR_TYPE_IRI)) {
-                logger.info("Trying to access " + d.getServiceId() + ".csv...");
+                logger.info("Trying to access {}.csv...", d.getServiceId());
                 try {
                     HttpGet get = new HttpGet(d.getServiceId() + ".csv");
                     get.setHeader("Accept", "text/csv");
@@ -233,7 +233,7 @@ public class ServerScanner implements ICode {
                     HttpResponse resp = c.execute(get);
                     watch.stop();
                     if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
                         d.reportTestFailure("DOWN");
                     } else {
                         CSVReader csvReader = null;
@@ -255,18 +255,18 @@ public class ServerScanner implements ICode {
                                 }
                             }
                         } catch (Exception ex) {
-                            logger.info("Test failed. Exception: " + ex.getMessage());
+                            logger.info("Test failed. Exception: {}", ex.getMessage());
                             d.reportTestFailure("BROKEN");
                         } finally {
                             if (csvReader != null) csvReader.close();
                         }
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+                    logger.error("Test failed. Exception: {}", ex.getMessage());
                     d.reportTestFailure("INACCESSIBLE");
                 }
             } else {
-                logger.info("Trying to access " + d.getServiceId() + "...");
+                logger.info("Trying to access {}...", d.getServiceId());
                 try {
                     HttpGet get = new HttpGet(d.getServiceId());
                     StopWatch watch = new StopWatch();
@@ -274,13 +274,13 @@ public class ServerScanner implements ICode {
                     HttpResponse resp = c.execute(get);
                     watch.stop();
                     if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code " + resp.getStatusLine().getStatusCode());
+                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
                         d.reportTestFailure("DOWN");
                     } else {
                         d.reportTestSuccess(watch.getTime());
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+                    logger.error("Test failed. Exception: {}", ex.getMessage());
                     d.reportTestFailure("INACCESSIBLE");
                 }
             }

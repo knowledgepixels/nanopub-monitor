@@ -1,5 +1,8 @@
 package ch.tkuhn.nanopub.monitor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -7,6 +10,7 @@ import java.util.Properties;
 public class MonitorConf {
 
     private static MonitorConf obj = new MonitorConf();
+    private static final Logger logger = LoggerFactory.getLogger(MonitorConf.class);
 
     public static MonitorConf get() {
         return obj;
@@ -20,7 +24,7 @@ public class MonitorConf {
         try {
             conf.load(in);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            logger.error("Could not load configuration file", ex);
             System.exit(1);
         }
         in = MonitorConf.class.getResourceAsStream("local.conf.properties");
@@ -28,7 +32,7 @@ public class MonitorConf {
             try {
                 conf.load(in);
             } catch (IOException ex) {
-                ex.printStackTrace();
+                logger.error("Could not load local configuration file", ex);
                 System.exit(1);
             }
         }

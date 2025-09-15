@@ -4,6 +4,8 @@ import com.opencsv.CSVWriter;
 import org.apache.wicket.request.resource.ByteArrayResource;
 import org.apache.wicket.request.resource.IResource;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -13,6 +15,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
     private static final long serialVersionUID = 7196507056520414804L;
 
     private static CsvTable instance = new CsvTable();
+    private static final Logger logger = LoggerFactory.getLogger(CsvTable.class);
 
     public static CsvTable instance() {
         return instance;
@@ -47,7 +50,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
             w.close();
             sw.close();
         } catch (IOException ex) {
-            ex.printStackTrace();
+            logger.error("Error closing CSV writer", ex);
         }
         return new ByteArrayResource("text/csv", sw.getBuffer().toString().getBytes());
     }

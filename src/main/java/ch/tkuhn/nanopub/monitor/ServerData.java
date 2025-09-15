@@ -99,7 +99,7 @@ public class ServerData implements Serializable {
     public void reportTestFailure(String message) {
         status = message;
         countFailure++;
-        logger.info("Test result: " + service.getServiceIri() + " " + getStatusString());
+        logger.info("Test result: {} {}", service.getServiceIri(), getStatusString());
     }
 
     public void reportTestSuccess(long responseTime) {
@@ -107,7 +107,7 @@ public class ServerData implements Serializable {
         status = "OK";
         totalResponseTime += responseTime;
         countSuccess++;
-        logger.info("Test result: " + service.getServiceIri() + " " + getStatusString() + " " + responseTime + "ms");
+        logger.info("Test result: {} {} {}ms", service.getServiceIri(), getStatusString(), responseTime);
     }
 
     public String getStatusString() {

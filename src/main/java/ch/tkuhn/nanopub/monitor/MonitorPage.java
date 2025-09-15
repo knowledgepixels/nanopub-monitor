@@ -24,10 +24,10 @@ public class MonitorPage extends WebPage {
 
     private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final Logger logger = LoggerFactory.getLogger(MonitorPage.class);
     private String points = "";
 
-    public MonitorPage(final PageParameters parameters) throws Exception {
+    public MonitorPage(final PageParameters parameters) {
         super(parameters);
         final ServerList sl = ServerList.get();
         final Set<String> ipAddresses = new HashSet<String>();
