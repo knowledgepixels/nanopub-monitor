@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
@@ -83,7 +85,7 @@ public class ServerData implements Serializable {
     private void loadIpInfo() {
         lastIpInfoRetrieval = System.currentTimeMillis();
         try {
-            ipInfo = fetchIpInfo(new URL(service.getServiceIri().stringValue()).getHost());
+            ipInfo = fetchIpInfo(new URI(service.getServiceIri().stringValue()).getHost());
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
             if (ipInfo == null) {
@@ -168,11 +170,11 @@ public class ServerData implements Serializable {
 
     private static Map<String, ServerIpInfo> ipInfoMap = new HashMap<>();
 
-    public static ServerIpInfo fetchIpInfo(String host) throws IOException {
+    public static ServerIpInfo fetchIpInfo(String host) throws IOException, URISyntaxException {
         if (!MonitorConf.get().isGeoIpInfoEnabled()) return ServerIpInfo.empty;
         if (ipInfoMap.containsKey(host)) return ipInfoMap.get(host);
         ServerIpInfo serverIpInfo = null;
-        URL geoipUrl = new URL("http://ip-api.com/json/" + host);
+        URL geoipUrl = new URI("http://ip-api.com/json/" + host).toURL();
         HttpURLConnection con = null;
         try {
             con = (HttpURLConnection) geoipUrl.openConnection();
