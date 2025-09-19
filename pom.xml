@@ -54,20 +54,11 @@
       <artifactId>wicket-extensions</artifactId>
       <version>${wicket.version}</version>
     </dependency>
-
-
-    <!--    <dependency>-->
-    <!--      <groupId>org.nanopub</groupId>-->
-    <!--      <artifactId>nanopub</artifactId>-->
-    <!--      <version>1.70-snapshot</version>-->
-    <!--    </dependency>-->
-    <!-- Temporary: dependency on Jitpack for snapshot builds -->
     <dependency>
-      <groupId>com.github.Nanopublication</groupId>
-      <artifactId>nanopub-java</artifactId>
-      <version>40a757163ca02beeddc80b66b95eda8b93f19d08</version>
+      <groupId>org.nanopub</groupId>
+      <artifactId>nanopub</artifactId>
+      <version>1.83</version>
     </dependency>
-
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
@@ -78,7 +69,6 @@
       <artifactId>opencsv</artifactId>
       <version>5.10</version>
     </dependency>
-
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
