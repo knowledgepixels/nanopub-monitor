@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.nanopub.extra.services.ApiResponse;
 import org.nanopub.extra.services.ApiResponseEntry;
 import org.nanopub.extra.services.QueryAccess;
+import org.nanopub.extra.services.QueryRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public class ServerList implements Serializable {
 
     private void refreshFromApi() {
         try {
-            ApiResponse resp = QueryAccess.get("RAorkjih6fAwpfjDtvCaIyIkqGNHqBOqukILXGbWfhMpI/get-services", null);
+            ApiResponse resp = QueryAccess.get(new QueryRef("RAorkjih6fAwpfjDtvCaIyIkqGNHqBOqukILXGbWfhMpI/get-services"));
             for (ApiResponseEntry e : resp.getData()) {
                 NanopubService ns = new NanopubService(vf.createIRI(e.get("service")), vf.createIRI(e.get("serviceType")));
                 if (!servers.containsKey(ns)) {
