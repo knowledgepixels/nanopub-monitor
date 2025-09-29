@@ -7,15 +7,9 @@
   <groupId>ch.tkuhn</groupId>
   <artifactId>nanopub-monitor</artifactId>
   <packaging>war</packaging>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.0.1-SNAPSHOT</version>
   <name>nanopub-monitor</name>
-  <description></description>
-  <!--
-    <organization>
-      <name>company name</name>
-      <url>company url</url>
-    </organization>
-  -->
+  <description>An application to monitor the nanopublication server network</description>
   <licenses>
     <license>
       <name>MIT license</name>
