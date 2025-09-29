@@ -1,24 +1,11 @@
-FROM maven:3.9.9-eclipse-temurin-23 as build
+FROM eclipse-temurin:23 AS build
 
-# Copy source for build:
-COPY src /nanopub-monitor/src
-COPY pom.xml /nanopub-monitor
+WORKDIR /app
+COPY . .
+RUN ./mvnw package -Dmaven.test.skip=true && \
+    mv target/nanopub-monitor.war /app/nanopub-monitor.war
 
-# Build with maven:
-RUN mvn -f /nanopub-monitor/pom.xml clean package
-
-# Pull base image:
-FROM tomcat:11.0
-
-# Remove default webapps:
-RUN rm -fr /usr/local/tomcat/webapps/*
-
-# Copy target from build stage
-COPY --from=build /nanopub-monitor/target/nanopub-monitor /usr/local/tomcat/nanopub-monitor/target/nanopub-monitor
-
-COPY scripts /usr/local/tomcat/nanopub-monitor/scripts
-RUN ln -s /usr/local/tomcat/nanopub-monitor/target/nanopub-monitor /usr/local/tomcat/webapps/ROOT
+FROM tomcat:11.0.9
+COPY --from=build /app/nanopub-monitor.war /usr/local/tomcat/webapps/ROOT.war
 
 EXPOSE 8080
-
-CMD ["catalina.sh", "run"]
