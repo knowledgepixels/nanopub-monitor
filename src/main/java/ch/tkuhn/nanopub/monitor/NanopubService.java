@@ -155,8 +155,7 @@ public class NanopubService {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof NanopubService)) return false;
-        NanopubService s = (NanopubService) obj;
+        if (!(obj instanceof NanopubService s)) return false;
         return serviceIri.equals(s.serviceIri) && typeIri.equals(s.typeIri);
     }
 
