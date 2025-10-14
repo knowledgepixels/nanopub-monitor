@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.StringWriter;
 
+/**
+ * Provides a CSV representation of the current server data.
+ */
 public class CsvTable implements SerializableSupplier<IResource> {
 
     private static final long serialVersionUID = 7196507056520414804L;
@@ -17,6 +20,11 @@ public class CsvTable implements SerializableSupplier<IResource> {
     private static CsvTable instance = new CsvTable();
     private static final Logger logger = LoggerFactory.getLogger(CsvTable.class);
 
+    /**
+     * Get the singleton instance of CsvTable.
+     *
+     * @return the CsvTable instance
+     */
     public static CsvTable instance() {
         return instance;
     }
@@ -24,6 +32,11 @@ public class CsvTable implements SerializableSupplier<IResource> {
     private CsvTable() {
     }
 
+    /**
+     * Generates a CSV resource containing the current server data.
+     *
+     * @return an IResource representing the CSV data
+     */
     @Override
     public IResource get() {
         StringWriter sw = new StringWriter();

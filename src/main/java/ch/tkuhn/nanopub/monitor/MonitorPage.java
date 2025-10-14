@@ -18,6 +18,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * The main page of the nanopub-monitor web application, displaying the status of nanopublication servers.
+ */
 public class MonitorPage extends WebPage {
 
     private static final long serialVersionUID = -2069078890268133150L;
@@ -27,6 +30,11 @@ public class MonitorPage extends WebPage {
     private static final Logger logger = LoggerFactory.getLogger(MonitorPage.class);
     private String points = "";
 
+    /**
+     * Constructs a MonitorPage with the given parameters.
+     *
+     * @param parameters the page parameters
+     */
     public MonitorPage(final PageParameters parameters) {
         super(parameters);
         final ServerList sl = ServerList.get();
@@ -90,6 +98,12 @@ public class MonitorPage extends WebPage {
         response.render(JavaScriptReferenceHeaderItem.forScript("var points = [" + points + "];", null));
     }
 
+    /**
+     * Formats a Date object into a string representation.
+     *
+     * @param date the Date object to format
+     * @return the formatted date string, or an empty string if the date is null
+     */
     static String formatDate(Date date) {
         if (date == null) return "";
         return dateFormat.format(date);

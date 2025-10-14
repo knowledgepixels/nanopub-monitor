@@ -16,12 +16,19 @@ import java.io.InputStreamReader;
 import java.time.Duration;
 import java.util.Random;
 
+/**
+ * A daemon task that periodically scans all registered nanopublication servers to check their status.
+ */
 public class ServerScanner implements ICode {
 
     private static ServerScanner singleton;
     private static Task scanTask;
     private static Random random = new Random();
 
+    /**
+     * Initialize and start the server scanner daemon if not already running.
+     * If the existing daemon has not shown signs of life for 10 minutes, it will be restarted.
+     */
     public static void initDaemon() {
         if (singleton != null) {
             if (singleton.aliveAtTime + 10 * 60 * 1000 < System.currentTimeMillis()) {

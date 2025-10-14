@@ -4,6 +4,9 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
+/**
+ * A nanopublication service, identified by its IRI and type.
+ */
 public class NanopubService {
 
     private static final ValueFactory vf = SimpleValueFactory.getInstance();
@@ -22,23 +25,49 @@ public class NanopubService {
     private final IRI serviceIri;
     private final IRI typeIri;
 
+    /**
+     * Create a new NanopubService with the given service IRI and type IRI.
+     *
+     * @param serviceIri the IRI of the service
+     * @param typeIri    the IRI of the service type
+     */
     public NanopubService(IRI serviceIri, IRI typeIri) {
         this.serviceIri = serviceIri;
         this.typeIri = typeIri;
     }
 
+    /**
+     * Get the IRI of the service.
+     *
+     * @return the service IRI
+     */
     public IRI getServiceIri() {
         return serviceIri;
     }
 
+    /**
+     * Get the IRI of the service type.
+     *
+     * @return the service type IRI
+     */
     public IRI getTypeIri() {
         return typeIri;
     }
 
+    /**
+     * Get a human-readable label for the service type, derived from the type IRI.
+     *
+     * @return the service type label
+     */
     public String getTypeLabel() {
         return typeIri.stringValue().replaceFirst("^.*/([^/]+)$", "$1");
     }
 
+    /**
+     * Get the horizontal offset for displaying the service on a map, based on its type.
+     *
+     * @return the horizontal offset
+     */
     public int getMapOffsetX() {
         if (typeIri.equals(NANOPUB_SERVER_TYPE_IRI)) {
             return 0;
@@ -64,6 +93,11 @@ public class NanopubService {
         return 0;
     }
 
+    /**
+     * Get the vertical offset for displaying the service on a map, based on its type.
+     *
+     * @return the vertical offset
+     */
     public int getMapOffsetY() {
         if (typeIri.equals(NANOPUB_SERVER_TYPE_IRI)) {
             return 0;
@@ -89,6 +123,11 @@ public class NanopubService {
         return 0;
     }
 
+    /**
+     * Get the color for displaying the service on a map, based on its type.
+     *
+     * @return the color as a CSS color string
+     */
     public String getMapColor() {
         if (typeIri.equals(NANOPUB_SERVER_TYPE_IRI)) {
             return "orange";

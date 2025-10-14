@@ -16,6 +16,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Data about a nanopublication server, including its service description, IP-based geolocation info,
+ * and monitoring statistics.
+ */
 public class ServerData implements Serializable {
 
     private static final long serialVersionUID = 1383338443824756632L;
@@ -34,12 +38,23 @@ public class ServerData implements Serializable {
     int countSuccess = 0;
     int countFailure = 0;
 
+    /**
+     * Creates a new ServerData instance for the given nanopublication service and optional server info.
+     *
+     * @param service the nanopublication service
+     * @param info    optional additional server info (may be null)
+     */
     public ServerData(NanopubService service, Object info) {
         this.service = service;
         update(info);
         getIpInfo();
     }
 
+    /**
+     * Update the server info and ensure IP info is loaded.
+     *
+     * @param info new server info (may be null)
+     */
     public void update(Object info) {
         if (info != null) {
             this.info = info;
@@ -59,22 +74,48 @@ public class ServerData implements Serializable {
         }
     }
 
+    /**
+     * Get the nanopublication service associated with this server data.
+     *
+     * @return the nanopublication service
+     */
     public NanopubService getService() {
         return service;
     }
 
+    /**
+     * Get the service ID (IRI string) of the nanopublication service.
+     *
+     * @return the service ID as a string
+     */
     public String getServiceId() {
         return service.getServiceIri().stringValue();
     }
 
+    /**
+     * Check if the service has the specified type.
+     *
+     * @param type the IRI of the service type to check
+     * @return true if the service has the specified type, false otherwise
+     */
     public boolean hasServiceType(IRI type) {
         return service.getTypeIri().equals(type);
     }
 
+    /**
+     * Get additional server info.
+     *
+     * @return the server info object (may be null)
+     */
     public Object getServerInfo() {
         return info;
     }
 
+    /**
+     * Get the IP-based geolocation info of the server.
+     *
+     * @return the ServerIpInfo object (never null; may be empty)
+     */
     public ServerIpInfo getIpInfo() {
         if (ipInfo == null) {
             loadIpInfo();
@@ -94,16 +135,31 @@ public class ServerData implements Serializable {
         }
     }
 
+    /**
+     * Get the date when the server was last seen as OK.
+     *
+     * @return the last seen OK date (may be null if never seen OK)
+     */
     public Date getLastSeenDate() {
         return lastSeenOk;
     }
 
+    /**
+     * Report a test failure with the given message.
+     *
+     * @param message the failure message
+     */
     public void reportTestFailure(String message) {
         status = message;
         countFailure++;
         logger.info("Test result: {} {}", service.getServiceIri(), getStatusString());
     }
 
+    /**
+     * Report a test success with the given response time in milliseconds.
+     *
+     * @param responseTime the response time in milliseconds
+     */
     public void reportTestSuccess(long responseTime) {
         lastSeenOk = new Date();
         status = "OK";
@@ -112,15 +168,30 @@ public class ServerData implements Serializable {
         logger.info("Test result: {} {} {}ms", service.getServiceIri(), getStatusString(), responseTime);
     }
 
+    /**
+     * Get the current status string of the server.
+     *
+     * @return the status string
+     */
     public String getStatusString() {
         return status;
     }
 
+    /**
+     * Get the average response time in milliseconds, or null if there are no successful tests.
+     *
+     * @return the average response time in milliseconds, or null
+     */
     public Integer getAvgResponseTimeInMs() {
         if (countSuccess == 0) return null;
         return (int) (totalResponseTime / (float) countSuccess);
     }
 
+    /**
+     * Get the average response time as a formatted string, or "?" if unknown.
+     *
+     * @return the average response time string
+     */
     public String getAvgResponseTimeString() {
         Integer respTime = getAvgResponseTimeInMs();
         if (respTime == null) {
@@ -130,6 +201,11 @@ public class ServerData implements Serializable {
         }
     }
 
+    /**
+     * Get the success ratio as a float between 0 and 1, or null if there are no tests.
+     *
+     * @return the success ratio, or null
+     */
     public Float getSuccessRatio() {
         if (countSuccess + countFailure > 0) {
             return (float) countSuccess / (countSuccess + countFailure);
@@ -138,6 +214,11 @@ public class ServerData implements Serializable {
         }
     }
 
+    /**
+     * Get the success ratio as a percentage string, or "?" if unknown.
+     *
+     * @return the success ratio string
+     */
     public String getSuccessRatioString() {
         if (countSuccess + countFailure > 0) {
             return (((float) countSuccess / (countSuccess + countFailure)) * 100) + "%";
@@ -146,6 +227,11 @@ public class ServerData implements Serializable {
         }
     }
 
+    /**
+     * Get the distance from the monitor to the server as a formatted string, or "?" if unknown.
+     *
+     * @return the distance string
+     */
     public String getDistanceString() {
         if (distanceString == null) {
             Integer distKm = getDistanceInKm();
@@ -158,6 +244,11 @@ public class ServerData implements Serializable {
         return distanceString;
     }
 
+    /**
+     * Get the distance from the monitor to the server in kilometers, or null if unknown.
+     *
+     * @return the distance in kilometers, or null
+     */
     public Integer getDistanceInKm() {
         ServerIpInfo monitorIpInfo = ServerList.get().getMonitorIpInfo();
         if (monitorIpInfo == null) return null;
@@ -170,6 +261,14 @@ public class ServerData implements Serializable {
 
     private static Map<String, ServerIpInfo> ipInfoMap = new HashMap<>();
 
+    /**
+     * Fetch IP-based geolocation info for the given host using the ip-api.com service.
+     *
+     * @param host the hostname or IP address to look up
+     * @return the ServerIpInfo object with geolocation data
+     * @throws IOException        if an I/O error occurs
+     * @throws URISyntaxException if the constructed URI is invalid
+     */
     public static ServerIpInfo fetchIpInfo(String host) throws IOException, URISyntaxException {
         if (!MonitorConf.get().isGeoIpInfoEnabled()) return ServerIpInfo.empty;
         if (ipInfoMap.containsKey(host)) return ipInfoMap.get(host);
