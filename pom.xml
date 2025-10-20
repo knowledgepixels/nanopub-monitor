@@ -7,7 +7,7 @@
   <groupId>ch.tkuhn</groupId>
   <artifactId>nanopub-monitor</artifactId>
   <packaging>war</packaging>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.0.2-SNAPSHOT</version>
   <name>nanopub-monitor</name>
   <description>An application to monitor the nanopublication server network</description>
   <licenses>
