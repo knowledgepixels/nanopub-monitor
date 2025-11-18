@@ -10,7 +10,7 @@ A webapp to monitor the nanopublication server network.
 You can find instances of the Nanopub Monitor here:
 
 - https://monitor.knowledgepixels.com/
-- https://monitor.np.trustyuri.net/
+- https://monitor.petapico.org/
 
 ## Development
 
