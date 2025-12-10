@@ -1,5 +1,6 @@
 let config = require('semantic-release-preconfigured-conventional-commits');
 config.tagFormat = 'nanopub-monitor-${version}'
+config.branches = ['release']
 config.plugins.push(
   [
     "@terrestris/maven-semantic-release",
