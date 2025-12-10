@@ -2,11 +2,9 @@ name: Autorelease
 
 on:
   push:
-    branches: [ master ]
+    branches: [ release ]
     paths-ignore:
       - 'CHANGELOG.md'
-  pull_request:
-    branches: [ master ]
 
 env:
   IMAGE_NAME: ${{ vars.IMAGE_NAME }}
@@ -34,21 +32,6 @@ jobs:
 
       - name: Maven Test
         run: ./mvnw test
-
-      - name: Send coverage to Coveralls (parallel)
-        uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b # v2.3.6
-        with:
-          parallel: true
-          flag-name: run-${{ join(matrix.*, '-') }}
-
-  coveralls:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Close parallel build
-        uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b # v2.3.6
-        with:
-          parallel-finished: true
 
   release:
     runs-on: ubuntu-latest
