@@ -75,6 +75,14 @@ public class MonitorPage extends WebPage {
                     statusLabel.add(new AttributeModifier("style", "color: red"));
                 }
                 item.add(statusLabel);
+                String groupLabel = sl.getHashGroupLabel(d);
+                String hashShort = d.getTrustStateHashShort();
+                String hashCell = hashShort.isEmpty() ? "" : hashShort + (groupLabel == null ? "" : " (" + groupLabel + ")");
+                Label trustHashLabel = new Label("trusthash", hashCell);
+                if ("outlier".equals(groupLabel)) {
+                    trustHashLabel.add(new AttributeModifier("style", "color: red"));
+                }
+                item.add(trustHashLabel);
                 item.add(new Label("successratio", d.getSuccessRatioString()));
                 item.add(new Label("resptime", d.getAvgResponseTimeString() + " (" + d.getDistanceString() + ")"));
                 item.add(new Label("lastseen", formatDate(d.getLastSeenDate())));

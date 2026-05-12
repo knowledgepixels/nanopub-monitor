@@ -41,16 +41,21 @@ public class CsvTable implements SerializableSupplier<IResource> {
     public IResource get() {
         StringWriter sw = new StringWriter();
         CSVWriter w = new CSVWriter(sw);
-        w.writeNext(new String[]{"URL", "Type", "Status", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
-        for (ServerData sd : ServerList.get().getSortedServerData()) {
+        w.writeNext(new String[]{"URL", "Type", "Status", "Trust State Hash", "Hash Group", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
+        ServerList sl = ServerList.get();
+        for (ServerData sd : sl.getSortedServerData()) {
             Float sr = sd.getSuccessRatio();
             Integer rt = sd.getAvgResponseTimeInMs();
             Integer dist = sd.getDistanceInKm();
             ServerIpInfo i = sd.getIpInfo();
+            String hash = sd.getTrustStateHash();
+            String group = sl.getHashGroupLabel(sd);
             w.writeNext(new String[]{
                     sd.getServiceId(),
                     sd.getService().getTypeIri().stringValue(),
                     sd.getStatusString(),
+                    (hash == null ? "" : hash),
+                    (group == null ? "" : group),
                     (sr == null ? "" : sr + ""),
                     (rt == null ? "" : rt + ""),
                     (dist == null ? "" : dist + ""),

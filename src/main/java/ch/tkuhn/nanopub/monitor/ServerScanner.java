@@ -2,6 +2,7 @@ package ch.tkuhn.nanopub.monitor;
 
 import com.opencsv.CSVReader;
 import org.apache.commons.lang.time.StopWatch;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -9,6 +10,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.wicket.util.thread.ICode;
 import org.apache.wicket.util.thread.Task;
+import org.nanopub.extra.server.NanopubServerUtils;
+import org.nanopub.extra.server.RegistryInfo;
 import org.slf4j.Logger;
 
 import java.io.BufferedReader;
@@ -266,6 +269,47 @@ public class ServerScanner implements ICode {
                             d.reportTestFailure("BROKEN");
                         } finally {
                             if (csvReader != null) csvReader.close();
+                        }
+                    }
+                } catch (Exception ex) {
+                    logger.error("Test failed. Exception: {}", ex.getMessage());
+                    d.reportTestFailure("INACCESSIBLE");
+                }
+            } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) {
+                logger.info("Loading RegistryInfo for {}...", d.getServiceId());
+                StopWatch watch = new StopWatch();
+                watch.start();
+                try {
+                    RegistryInfo info = RegistryInfo.load(d.getServiceId());
+                    watch.stop();
+                    d.setTrustStateHash(info.getTrustStateHash());
+                    if (!NanopubServerUtils.isReadyRegistryStatus(info.getStatus())) {
+                        d.reportTestFailure("STATUS: " + info.getStatus());
+                    } else {
+                        d.reportTestSuccess(watch.getTime());
+                    }
+                } catch (RegistryInfo.RegistryInfoException ex) {
+                    logger.info("Registry info load failed: {}", ex.getMessage());
+                    d.reportTestFailure("INACCESSIBLE");
+                }
+            } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_QUERY_TYPE_IRI)) {
+                logger.info("Probing query status at {}...", d.getServiceId());
+                try {
+                    HttpGet get = new HttpGet(d.getServiceId());
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    HttpResponse resp = c.execute(get);
+                    watch.stop();
+                    if (!wasSuccessful(resp)) {
+                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
+                        d.reportTestFailure("DOWN");
+                    } else {
+                        Header statusHeader = resp.getFirstHeader("Nanopub-Query-Status");
+                        String headerStatus = statusHeader == null ? null : statusHeader.getValue();
+                        if (headerStatus == null || !headerStatus.equalsIgnoreCase("READY")) {
+                            d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
+                        } else {
+                            d.reportTestSuccess(watch.getTime());
                         }
                     }
                 } catch (Exception ex) {

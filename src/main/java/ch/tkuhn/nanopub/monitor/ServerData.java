@@ -34,6 +34,7 @@ public class ServerData implements Serializable {
     private String status = "NOT SEEN";
     private String distanceString = null;
     private long totalResponseTime = 0;
+    private String trustStateHash;
 
     int countSuccess = 0;
     int countFailure = 0;
@@ -100,6 +101,18 @@ public class ServerData implements Serializable {
      */
     public boolean hasServiceType(IRI type) {
         return service.getTypeIri().equals(type);
+    }
+
+    /**
+     * Check if the service type IRI starts with the given prefix IRI.
+     * Used to match versioned service type IRIs (e.g. {@code nanopub-registry-1.0}
+     * against the unversioned {@code nanopub-registry} prefix).
+     *
+     * @param prefix the prefix IRI
+     * @return true if the service type starts with the prefix, false otherwise
+     */
+    public boolean hasServiceTypePrefix(IRI prefix) {
+        return service.getTypeIri().stringValue().startsWith(prefix.stringValue());
     }
 
     /**
@@ -225,6 +238,35 @@ public class ServerData implements Serializable {
         } else {
             return "?";
         }
+    }
+
+    /**
+     * Get the Nanopub-Registry trust state hash last reported by this server, or null if unknown
+     * (e.g. for non-registry types, or if the server has not yet been scanned).
+     *
+     * @return the trust state hash, or null
+     */
+    public String getTrustStateHash() {
+        return trustStateHash;
+    }
+
+    /**
+     * Set the Nanopub-Registry trust state hash for this server.
+     *
+     * @param hash the trust state hash (may be null)
+     */
+    public void setTrustStateHash(String hash) {
+        this.trustStateHash = hash;
+    }
+
+    /**
+     * Get a short prefix of the trust state hash suitable for display, or "" if unknown.
+     *
+     * @return the short hash, or ""
+     */
+    public String getTrustStateHashShort() {
+        if (trustStateHash == null || trustStateHash.length() < 12) return trustStateHash == null ? "" : trustStateHash;
+        return trustStateHash.substring(0, 12);
     }
 
     /**

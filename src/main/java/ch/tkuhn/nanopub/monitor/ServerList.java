@@ -86,6 +86,48 @@ public class ServerList implements Serializable {
     }
 
     /**
+     * Get the trust state hash reported by the largest number of registries. Used as the
+     * consensus value: registries reporting a different hash are flagged as outliers.
+     *
+     * @return the majority trust state hash, or null if no registry has reported one yet
+     */
+    public String getMajorityTrustStateHash() {
+        Map<String, Integer> counts = new HashMap<>();
+        for (ServerData sd : servers.values()) {
+            if (!sd.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) continue;
+            String h = sd.getTrustStateHash();
+            if (h == null) continue;
+            counts.merge(h, 1, Integer::sum);
+        }
+        String majority = null;
+        int best = 0;
+        for (Map.Entry<String, Integer> e : counts.entrySet()) {
+            if (e.getValue() > best) {
+                best = e.getValue();
+                majority = e.getKey();
+            }
+        }
+        return majority;
+    }
+
+    /**
+     * Classify a registry's trust state hash against the network consensus.
+     * Returns "consensus" if it matches the majority, "outlier" if it differs,
+     * or null if the server is not a registry or has not reported a hash.
+     *
+     * @param sd the server data
+     * @return "consensus", "outlier", or null
+     */
+    public String getHashGroupLabel(ServerData sd) {
+        if (!sd.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) return null;
+        String h = sd.getTrustStateHash();
+        if (h == null) return null;
+        String majority = getMajorityTrustStateHash();
+        if (majority == null) return null;
+        return h.equals(majority) ? "consensus" : "outlier";
+    }
+
+    /**
      * Get the IP information of the monitor server.
      * This method fetches the information only once and caches it for future calls.
      *
