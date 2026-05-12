@@ -23,6 +23,7 @@ public class MonitorApplication extends WebApplication {
     public void init() {
         super.init();
         mountResource(".csv", ResourceReference.of("csv", CsvTable.instance()));
+        mountResource(".json", ResourceReference.of("json", JsonStatus.instance()));
         getCspSettings().blocking().disabled();
         getRequestCycleListeners().add(new IRequestCycleListener() {
             @Override
