@@ -249,6 +249,7 @@ public class ServerScanner implements ICode {
                         logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
                         d.reportTestFailure("DOWN");
                     } else {
+                        d.setVersion(headerValue(resp, "Nanopub-Monitor-Version"));
                         CSVReader csvReader = null;
                         try {
                             csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
