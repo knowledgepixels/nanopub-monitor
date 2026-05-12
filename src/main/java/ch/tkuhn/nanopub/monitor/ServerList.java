@@ -86,15 +86,20 @@ public class ServerList implements Serializable {
     }
 
     /**
-     * Get the trust state hash reported by the largest number of registries. Used as the
-     * consensus value: registries reporting a different hash are flagged as outliers.
+     * Get the trust state hash reported by the largest number of registries running the
+     * given setting. Used as the consensus value within a setting cohort: registries with
+     * the same setting but a different hash are flagged as outliers. Comparing hashes
+     * across different settings is not meaningful, so the calculation is scoped per setting.
      *
-     * @return the majority trust state hash, or null if no registry has reported one yet
+     * @param setting the registry setting (trusty URI); if null, the result is null
+     * @return the majority trust state hash for the cohort, or null if none
      */
-    public String getMajorityTrustStateHash() {
+    public String getMajorityTrustStateHashForSetting(String setting) {
+        if (setting == null) return null;
         Map<String, Integer> counts = new HashMap<>();
         for (ServerData sd : servers.values()) {
             if (!sd.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) continue;
+            if (!setting.equals(sd.getCurrentSetting())) continue;
             String h = sd.getTrustStateHash();
             if (h == null) continue;
             counts.merge(h, 1, Integer::sum);
@@ -111,9 +116,10 @@ public class ServerList implements Serializable {
     }
 
     /**
-     * Classify a registry's trust state hash against the network consensus.
-     * Returns "consensus" if it matches the majority, "outlier" if it differs,
-     * or null if the server is not a registry or has not reported a hash.
+     * Classify a registry's trust state hash against the consensus of its setting cohort.
+     * Returns "consensus" if it matches the majority for the same setting, "outlier" if it
+     * differs, or null if the server is not a registry, has not reported a hash, or has not
+     * reported a setting.
      *
      * @param sd the server data
      * @return "consensus", "outlier", or null
@@ -122,7 +128,9 @@ public class ServerList implements Serializable {
         if (!sd.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) return null;
         String h = sd.getTrustStateHash();
         if (h == null) return null;
-        String majority = getMajorityTrustStateHash();
+        String setting = sd.getCurrentSetting();
+        if (setting == null) return null;
+        String majority = getMajorityTrustStateHashForSetting(setting);
         if (majority == null) return null;
         return h.equals(majority) ? "consensus" : "outlier";
     }

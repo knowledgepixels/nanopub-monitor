@@ -1,5 +1,8 @@
 package ch.tkuhn.nanopub.monitor;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.opencsv.CSVReader;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.http.Header;
@@ -15,6 +18,7 @@ import org.slf4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.time.Duration;
 import java.util.Random;
 
@@ -275,9 +279,9 @@ public class ServerScanner implements ICode {
                     d.reportTestFailure("INACCESSIBLE");
                 }
             } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) {
-                logger.info("Probing registry status at {}...", d.getServiceId());
+                logger.info("Probing registry status at {}.json...", d.getServiceId());
                 try {
-                    HttpGet get = new HttpGet(d.getServiceId());
+                    HttpGet get = new HttpGet(d.getServiceId() + ".json");
                     StopWatch watch = new StopWatch();
                     watch.start();
                     HttpResponse resp = c.execute(get);
@@ -289,6 +293,13 @@ public class ServerScanner implements ICode {
                         d.setTrustStateHash(headerValue(resp, "Nanopub-Registry-Trust-State-Hash"));
                         d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Registry-Nanopub-Count")));
                         d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Registry-Test-Instance")));
+                        try (Reader r = new InputStreamReader(resp.getEntity().getContent())) {
+                            JsonObject body = JsonParser.parseReader(r).getAsJsonObject();
+                            d.setCurrentSetting(jsonString(body, "currentSetting"));
+                            d.setOriginalSetting(jsonString(body, "originalSetting"));
+                        } catch (Exception ex) {
+                            logger.info("Could not parse registry JSON body: {}", ex.getMessage());
+                        }
                         String headerStatus = headerValue(resp, "Nanopub-Registry-Status");
                         if (!NanopubServerUtils.isReadyRegistryStatus(headerStatus)) {
                             d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
@@ -364,6 +375,12 @@ public class ServerScanner implements ICode {
         } catch (NumberFormatException ex) {
             return null;
         }
+    }
+
+    private static String jsonString(JsonObject obj, String key) {
+        if (!obj.has(key)) return null;
+        JsonElement el = obj.get(key);
+        return el.isJsonNull() ? null : el.getAsString();
     }
 
     private void stillAlive() {

@@ -79,8 +79,7 @@ public class MonitorPage extends WebPage {
                 }
                 item.add(statusLabel);
                 String groupLabel = sl.getHashGroupLabel(d);
-                String hashShort = d.getTrustStateHashShort();
-                String hashCell = hashShort.isEmpty() ? "" : hashShort + (groupLabel == null ? "" : " (" + groupLabel + ")");
+                String hashCell = formatTrustHashCell(d, groupLabel);
                 Label trustHashLabel = new Label("trusthash", hashCell);
                 if ("outlier".equals(groupLabel)) {
                     trustHashLabel.add(new AttributeModifier("style", "color: red"));
@@ -119,6 +118,32 @@ public class MonitorPage extends WebPage {
     static String formatDate(Date date) {
         if (date == null) return "";
         return dateFormat.format(date);
+    }
+
+    /**
+     * Format the trust hash table cell, combining setting and hash:
+     *   "<setting> / <hash> (<group>)"
+     * with "<origSetting> → <currentSetting> / ..." when the setting was changed at runtime.
+     * Returns "" if neither a setting nor a hash is known.
+     */
+    static String formatTrustHashCell(ServerData d, String groupLabel) {
+        String hashShort = d.getTrustStateHashShort();
+        String current = d.getCurrentSetting();
+        String original = d.getOriginalSetting();
+        if (hashShort.isEmpty() && current == null) return "";
+        StringBuilder sb = new StringBuilder();
+        if (current != null) {
+            if (original != null && !original.equals(current)) {
+                sb.append(ServerData.shortSetting(original)).append(" → ");
+            }
+            sb.append(ServerData.shortSetting(current));
+        }
+        if (!hashShort.isEmpty()) {
+            if (sb.length() > 0) sb.append(" / ");
+            sb.append(hashShort);
+            if (groupLabel != null) sb.append(" (").append(groupLabel).append(")");
+        }
+        return sb.toString();
     }
 
 }

@@ -35,6 +35,8 @@ public class ServerData implements Serializable {
     private String distanceString = null;
     private long totalResponseTime = 0;
     private String trustStateHash;
+    private String currentSetting;
+    private String originalSetting;
     private Long nanopubCount;
     private boolean testInstance;
 
@@ -269,6 +271,54 @@ public class ServerData implements Serializable {
     public String getTrustStateHashShort() {
         if (trustStateHash == null || trustStateHash.length() < 12) return trustStateHash == null ? "" : trustStateHash;
         return trustStateHash.substring(0, 12);
+    }
+
+    /**
+     * Get the trusty URI of the registry's current setting, or null if unknown.
+     *
+     * @return the current setting, or null
+     */
+    public String getCurrentSetting() {
+        return currentSetting;
+    }
+
+    /**
+     * Set the current setting trusty URI.
+     *
+     * @param setting the setting URI (may be null)
+     */
+    public void setCurrentSetting(String setting) {
+        this.currentSetting = setting;
+    }
+
+    /**
+     * Get the trusty URI of the registry's original setting (the one it was initialized with),
+     * or null if unknown.
+     *
+     * @return the original setting, or null
+     */
+    public String getOriginalSetting() {
+        return originalSetting;
+    }
+
+    /**
+     * Set the original setting trusty URI.
+     *
+     * @param setting the setting URI (may be null)
+     */
+    public void setOriginalSetting(String setting) {
+        this.originalSetting = setting;
+    }
+
+    /**
+     * Short prefix of a setting URI for compact display, or "" if null.
+     *
+     * @param setting the setting URI
+     * @return the short prefix, or ""
+     */
+    public static String shortSetting(String setting) {
+        if (setting == null) return "";
+        return setting.length() > 10 ? setting.substring(0, 10) : setting;
     }
 
     /**

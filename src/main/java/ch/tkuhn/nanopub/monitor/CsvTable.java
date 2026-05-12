@@ -41,7 +41,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
     public IResource get() {
         StringWriter sw = new StringWriter();
         CSVWriter w = new CSVWriter(sw);
-        w.writeNext(new String[]{"URL", "Type", "Test Instance", "Status", "Trust State Hash", "Hash Group", "Nanopub Count", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
+        w.writeNext(new String[]{"URL", "Type", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Nanopub Count", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
         ServerList sl = ServerList.get();
         for (ServerData sd : sl.getSortedServerData()) {
             Float sr = sd.getSuccessRatio();
@@ -56,6 +56,8 @@ public class CsvTable implements SerializableSupplier<IResource> {
                     sd.getService().getTypeIri().stringValue(),
                     sd.isTestInstance() ? "true" : "",
                     sd.getStatusString(),
+                    (sd.getCurrentSetting() == null ? "" : sd.getCurrentSetting()),
+                    (sd.getOriginalSetting() == null ? "" : sd.getOriginalSetting()),
                     (hash == null ? "" : hash),
                     (group == null ? "" : group),
                     (npc == null ? "" : npc.toString()),
