@@ -338,6 +338,33 @@ public class ServerScanner implements ICode {
                     logger.error("Test failed. Exception: {}", ex.getMessage());
                     d.reportTestFailure("INACCESSIBLE");
                 }
+            } else if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
+                logger.info("Probing nanopub-server info at {}...", d.getServiceId());
+                try {
+                    HttpGet get = new HttpGet(d.getServiceId());
+                    get.setHeader("Accept", "application/json");
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    HttpResponse resp = c.execute(get);
+                    watch.stop();
+                    if (!wasSuccessful(resp)) {
+                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
+                        d.reportTestFailure("DOWN");
+                    } else {
+                        try (Reader r = new InputStreamReader(resp.getEntity().getContent())) {
+                            JsonObject body = JsonParser.parseReader(r).getAsJsonObject();
+                            if (body.has("nextNanopubNo") && !body.get("nextNanopubNo").isJsonNull()) {
+                                d.setNanopubCount(body.get("nextNanopubNo").getAsLong());
+                            }
+                        } catch (Exception ex) {
+                            logger.info("Could not parse nanopub-server JSON body: {}", ex.getMessage());
+                        }
+                        d.reportTestSuccess(watch.getTime());
+                    }
+                } catch (Exception ex) {
+                    logger.error("Test failed. Exception: {}", ex.getMessage());
+                    d.reportTestFailure("INACCESSIBLE");
+                }
             } else {
                 logger.info("Trying to access {}...", d.getServiceId());
                 try {
