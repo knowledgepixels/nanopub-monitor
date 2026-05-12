@@ -290,6 +290,7 @@ public class ServerScanner implements ICode {
                         logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
                         d.reportTestFailure("DOWN");
                     } else {
+                        d.setVersion(headerValue(resp, "Nanopub-Registry-Version"));
                         d.setTrustStateHash(headerValue(resp, "Nanopub-Registry-Trust-State-Hash"));
                         d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Registry-Nanopub-Count")));
                         d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Registry-Test-Instance")));
@@ -323,6 +324,7 @@ public class ServerScanner implements ICode {
                         logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
                         d.reportTestFailure("DOWN");
                     } else {
+                        d.setVersion(headerValue(resp, "Nanopub-Query-Version"));
                         d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Query-Registry-Nanopub-Count")));
                         d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Query-Registry-Test-Instance")));
                         String headerStatus = headerValue(resp, "Nanopub-Query-Status");

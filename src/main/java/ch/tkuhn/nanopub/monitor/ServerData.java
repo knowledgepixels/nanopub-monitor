@@ -39,6 +39,7 @@ public class ServerData implements Serializable {
     private String originalSetting;
     private Long nanopubCount;
     private boolean testInstance;
+    private String version;
 
     int countSuccess = 0;
     int countFailure = 0;
@@ -347,6 +348,24 @@ public class ServerData implements Serializable {
     public String getNanopubCountString() {
         if (nanopubCount == null) return "";
         return String.format("%,d", nanopubCount);
+    }
+
+    /**
+     * Get the server software version reported by this server, or null if unknown.
+     *
+     * @return the version, or null
+     */
+    public String getVersion() {
+        return version;
+    }
+
+    /**
+     * Set the server software version.
+     *
+     * @param version the version string (may be null)
+     */
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     /**

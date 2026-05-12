@@ -73,6 +73,7 @@ public class MonitorPage extends WebPage {
                 Label testChip = new Label("testchip", "TEST");
                 testChip.setVisible(d.isTestInstance());
                 item.add(testChip);
+                item.add(new Label("version", d.getVersion() == null ? "" : d.getVersion()));
                 Label statusLabel = new Label("status", d.getStatusString());
                 if (!d.getStatusString().equals("OK")) {
                     statusLabel.add(new AttributeModifier("style", "color: red"));
