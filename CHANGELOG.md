@@ -1,3 +1,52 @@
+## [1.1.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.0.1...nanopub-monitor-1.1.0) (2026-05-12)
+
+### Features
+
+* **monitor:** add /.json status endpoint for machine consumers ([e3cddcf](https://github.com/knowledgepixels/nanopub-monitor/commit/e3cddcff15a1a43ebbce4f3f87df3ea26f616a0c))
+* **monitor:** expose Nanopub-Monitor-Version header and read it from peers ([d29a229](https://github.com/knowledgepixels/nanopub-monitor/commit/d29a229f7337233ad69b9837dcf497f236ceca3f))
+* **monitor:** link to /.json next to /.csv on the page footer ([b7e36e4](https://github.com/knowledgepixels/nanopub-monitor/commit/b7e36e43e1b23b7684503a5e2c054003def9066e))
+* **monitor:** show nanopub count and test-instance flag ([d30e59b](https://github.com/knowledgepixels/nanopub-monitor/commit/d30e59b05042658125f7a96c41d183855a14154a))
+* **monitor:** show nanopub count for legacy nanopub-server services ([75c8f2e](https://github.com/knowledgepixels/nanopub-monitor/commit/75c8f2ee99f15aca7c7625d9f529e85dc91675ae))
+* **monitor:** show registry setting and scope hash consensus to it ([d29451c](https://github.com/knowledgepixels/nanopub-monitor/commit/d29451c16bf084161df8265cee9feb37d3d3116f))
+* **monitor:** show server version for registries and queries ([e43645b](https://github.com/knowledgepixels/nanopub-monitor/commit/e43645b93f60526ff900c3f5665262de5b564d22))
+* **scanner:** check registry/query Status headers and trust-state agreement ([75bd489](https://github.com/knowledgepixels/nanopub-monitor/commit/75bd489b60db40ce53dbd00d949c6e0a6e638041))
+
+### Dependency updates
+
+* **api-deps:** update org.nanopub:nanopub dependency to v1.86.0 ([af1f33e](https://github.com/knowledgepixels/nanopub-monitor/commit/af1f33ee45c144dbe7c0e4ba7632080dad780439))
+* **core-deps:** update dependency com.google.code.gson:gson to v2.13.2 ([bcfb9e4](https://github.com/knowledgepixels/nanopub-monitor/commit/bcfb9e4218a3c6f4d4005659deb31f5bcfed36bd))
+* **core-deps:** update dependency org.nanopub:nanopub to v1.84 ([5388d10](https://github.com/knowledgepixels/nanopub-monitor/commit/5388d10bcc3212d283e48ead41daa51d480be8ff))
+* **deps:** add org.jacoco:jacoco-maven-plugin dependency v0.8.13 ([4bc57c6](https://github.com/knowledgepixels/nanopub-monitor/commit/4bc57c62b2297d70ff2fecb5a94f1897a2e2acd3))
+* **deps:** update com.google.code.gson:gson to v2.14.0 ([99ce1af](https://github.com/knowledgepixels/nanopub-monitor/commit/99ce1af3bc3cead4aef1f5825069e0b44589ed83))
+* **deps:** update com.opencsv:opencsv to v5.12.0 ([f947d23](https://github.com/knowledgepixels/nanopub-monitor/commit/f947d234455bc82fdef54598cd767740df9d5570))
+* **deps:** update dependency js-yaml to v4.1.1 ([2de1dd7](https://github.com/knowledgepixels/nanopub-monitor/commit/2de1dd72625510041463f6238aa47d4a0c6d640f))
+* **deps:** update org.apache.wicket to v10.9.0 ([9b09995](https://github.com/knowledgepixels/nanopub-monitor/commit/9b0999511321b52986d407e88eb4213b374ce0d9))
+* **deps:** update org.junit.jupiter:junit-jupiter to v5.14.4 ([54b3f5c](https://github.com/knowledgepixels/nanopub-monitor/commit/54b3f5c8652f8b2d0bb633f733a0429b62b62bc3))
+* **deps:** update org.nanopub:nanopub dependency to v1.86.1 ([945ef8f](https://github.com/knowledgepixels/nanopub-monitor/commit/945ef8f8702783e009a59fb371e9138dc8957e39))
+* **deps:** update org.nanopub:nanopub dependency to v1.88.0 ([2954041](https://github.com/knowledgepixels/nanopub-monitor/commit/29540418a777f57c00228e3ed950c2c8ded39d88))
+* **deps:** update semantic-release to v25.0.0 and semantic-release-preconfigured-conventional commits to v1.1.156 ([2c58727](https://github.com/knowledgepixels/nanopub-monitor/commit/2c587275b264c67df36dc494e95d0c937ab22bf5))
+
+### Build and continuous integration
+
+* add coveralls parallel build configuration ([3bad43b](https://github.com/knowledgepixels/nanopub-monitor/commit/3bad43b79eae38e926cb299db54f72a63d54655e))
+* add Maven test and coverage upload workflow ([de0fd8c](https://github.com/knowledgepixels/nanopub-monitor/commit/de0fd8c66bce5d234bb43a8632cd118fac4802dc))
+* **deps:** update actions/checkout action to v5.0.1 ([7c256e9](https://github.com/knowledgepixels/nanopub-monitor/commit/7c256e9c05e6513b7a34390cb882965b8d1c802b))
+* **deps:** update actions/setup-java action to v5.1.0 ([884b186](https://github.com/knowledgepixels/nanopub-monitor/commit/884b186fbe4f8fd57febede029e702d738c86927))
+* **release:** automate master branch update after release ([2c9d876](https://github.com/knowledgepixels/nanopub-monitor/commit/2c9d876ea9a29464e879b8701131fe7381f2a34d))
+* update release workflow to trigger on release branch ([b1e22e9](https://github.com/knowledgepixels/nanopub-monitor/commit/b1e22e994248fa31748267f608d3c0c0f90f48ab))
+
+### General maintenance
+
+* add contributing guidelines ([c5ca016](https://github.com/knowledgepixels/nanopub-monitor/commit/c5ca0167d76fd94b9899998e31d05fa5098c2c28))
+* **build:** pin maven-surefire-plugin to v3.5.5 ([1817793](https://github.com/knowledgepixels/nanopub-monitor/commit/1817793788deb779e0118893f0d5f4fca186a056))
+* **build:** update jacoco-maven-plugin to v0.8.14 ([12f8a9b](https://github.com/knowledgepixels/nanopub-monitor/commit/12f8a9b0c1d29e155a7971cc3c522a9bce63743e))
+* **build:** update jib-maven-plugin to v3.5.1 ([60e9f55](https://github.com/knowledgepixels/nanopub-monitor/commit/60e9f5588de615edfcd79c825b729338c8dd58de))
+* **build:** update maven-compiler-plugin to v3.14.1 ([0968e41](https://github.com/knowledgepixels/nanopub-monitor/commit/0968e4141f1a247d85b0912873c6cc2b852082cd))
+* **build:** update maven-war-plugin to v3.5.1 ([b9bc4f6](https://github.com/knowledgepixels/nanopub-monitor/commit/b9bc4f61240ba682dd52a16ad3299a74ac0c9b99))
+* **readme:** update Nanopub Monitor available instances list ([c62b2aa](https://github.com/knowledgepixels/nanopub-monitor/commit/c62b2aac0442f9b5aa7d4291d826f597554f33a4))
+* **sem-release:** update configuration for releasing from 'release' branch ([0367acd](https://github.com/knowledgepixels/nanopub-monitor/commit/0367acd4021d2492e0f6656c6a9b30c78f4b89b7))
+* setting next snapshot version [skip ci] ([e2b4489](https://github.com/knowledgepixels/nanopub-monitor/commit/e2b448945a6c8736a42666937dd3bb4bb1816042))
+
 ## [1.0.1](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.0.0...nanopub-monitor-1.0.1) (2025-10-20)
 
 ### Dependency updates
