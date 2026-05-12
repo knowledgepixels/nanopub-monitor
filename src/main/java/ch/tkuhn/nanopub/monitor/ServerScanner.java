@@ -11,7 +11,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.wicket.util.thread.ICode;
 import org.apache.wicket.util.thread.Task;
 import org.nanopub.extra.server.NanopubServerUtils;
-import org.nanopub.extra.server.RegistryInfo;
 import org.slf4j.Logger;
 
 import java.io.BufferedReader;
@@ -276,20 +275,29 @@ public class ServerScanner implements ICode {
                     d.reportTestFailure("INACCESSIBLE");
                 }
             } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) {
-                logger.info("Loading RegistryInfo for {}...", d.getServiceId());
-                StopWatch watch = new StopWatch();
-                watch.start();
+                logger.info("Probing registry status at {}...", d.getServiceId());
                 try {
-                    RegistryInfo info = RegistryInfo.load(d.getServiceId());
+                    HttpGet get = new HttpGet(d.getServiceId());
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    HttpResponse resp = c.execute(get);
                     watch.stop();
-                    d.setTrustStateHash(info.getTrustStateHash());
-                    if (!NanopubServerUtils.isReadyRegistryStatus(info.getStatus())) {
-                        d.reportTestFailure("STATUS: " + info.getStatus());
+                    if (!wasSuccessful(resp)) {
+                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
+                        d.reportTestFailure("DOWN");
                     } else {
-                        d.reportTestSuccess(watch.getTime());
+                        d.setTrustStateHash(headerValue(resp, "Nanopub-Registry-Trust-State-Hash"));
+                        d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Registry-Nanopub-Count")));
+                        d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Registry-Test-Instance")));
+                        String headerStatus = headerValue(resp, "Nanopub-Registry-Status");
+                        if (!NanopubServerUtils.isReadyRegistryStatus(headerStatus)) {
+                            d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
+                        } else {
+                            d.reportTestSuccess(watch.getTime());
+                        }
                     }
-                } catch (RegistryInfo.RegistryInfoException ex) {
-                    logger.info("Registry info load failed: {}", ex.getMessage());
+                } catch (Exception ex) {
+                    logger.error("Test failed. Exception: {}", ex.getMessage());
                     d.reportTestFailure("INACCESSIBLE");
                 }
             } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_QUERY_TYPE_IRI)) {
@@ -304,8 +312,9 @@ public class ServerScanner implements ICode {
                         logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
                         d.reportTestFailure("DOWN");
                     } else {
-                        Header statusHeader = resp.getFirstHeader("Nanopub-Query-Status");
-                        String headerStatus = statusHeader == null ? null : statusHeader.getValue();
+                        d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Query-Registry-Nanopub-Count")));
+                        d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Query-Registry-Test-Instance")));
+                        String headerStatus = headerValue(resp, "Nanopub-Query-Status");
                         if (headerStatus == null || !headerStatus.equalsIgnoreCase("READY")) {
                             d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
                         } else {
@@ -341,6 +350,20 @@ public class ServerScanner implements ICode {
     private boolean wasSuccessful(HttpResponse resp) {
         int c = resp.getStatusLine().getStatusCode();
         return c >= 200 && c < 300;
+    }
+
+    private static String headerValue(HttpResponse resp, String name) {
+        Header h = resp.getFirstHeader(name);
+        return h == null ? null : h.getValue();
+    }
+
+    private static Long parseLongOrNull(String s) {
+        if (s == null) return null;
+        try {
+            return Long.parseLong(s.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private void stillAlive() {

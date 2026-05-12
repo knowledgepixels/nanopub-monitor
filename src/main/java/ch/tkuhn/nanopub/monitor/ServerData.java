@@ -35,6 +35,8 @@ public class ServerData implements Serializable {
     private String distanceString = null;
     private long totalResponseTime = 0;
     private String trustStateHash;
+    private Long nanopubCount;
+    private boolean testInstance;
 
     int countSuccess = 0;
     int countFailure = 0;
@@ -267,6 +269,52 @@ public class ServerData implements Serializable {
     public String getTrustStateHashShort() {
         if (trustStateHash == null || trustStateHash.length() < 12) return trustStateHash == null ? "" : trustStateHash;
         return trustStateHash.substring(0, 12);
+    }
+
+    /**
+     * Get the nanopub count last reported by this server, or null if unknown.
+     *
+     * @return the nanopub count, or null
+     */
+    public Long getNanopubCount() {
+        return nanopubCount;
+    }
+
+    /**
+     * Set the nanopub count for this server.
+     *
+     * @param count the nanopub count (may be null)
+     */
+    public void setNanopubCount(Long count) {
+        this.nanopubCount = count;
+    }
+
+    /**
+     * Get the nanopub count formatted with thousand separators, or "" if unknown.
+     *
+     * @return the formatted count, or ""
+     */
+    public String getNanopubCountString() {
+        if (nanopubCount == null) return "";
+        return String.format("%,d", nanopubCount);
+    }
+
+    /**
+     * Whether this server is flagged as a test instance.
+     *
+     * @return true if it is a test instance
+     */
+    public boolean isTestInstance() {
+        return testInstance;
+    }
+
+    /**
+     * Set whether this server is a test instance.
+     *
+     * @param testInstance true if it is a test instance
+     */
+    public void setTestInstance(boolean testInstance) {
+        this.testInstance = testInstance;
     }
 
     /**

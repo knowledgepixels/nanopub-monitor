@@ -198,3 +198,14 @@ select {
   margin-left: 10px;
   font-size: 0px;
 }
+
+.test-chip {
+  display: inline-block;
+  font-size: 8pt;
+  font-weight: bold;
+  padding: 1px 5px;
+  margin-left: 4px;
+  background: #d4a017;
+  color: white;
+  border-radius: 3px;
+}
