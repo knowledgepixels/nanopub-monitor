@@ -56,6 +56,15 @@ public class MonitorConf {
     }
 
     /**
+     * Get the number of parallel workers used to test servers in each scan.
+     *
+     * @return the number of scanner worker threads
+     */
+    public int getScanThreads() {
+        return Integer.parseInt(conf.getProperty("scan-threads"));
+    }
+
+    /**
      * Whether the monitor should show a map with server locations.
      *
      * @return true if the map should be shown, false otherwise

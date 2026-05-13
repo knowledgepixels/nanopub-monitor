@@ -20,7 +20,13 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A daemon task that periodically scans all registered nanopublication servers to check their status.
@@ -68,11 +74,42 @@ public class ServerScanner implements ICode {
     }
 
     private void testServers() {
-        RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(10 * 1000).build();
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(10 * 1000)
+                .setSocketTimeout(15 * 1000)
+                .build();
         HttpClient c = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
-        for (ServerData d : ServerList.get().getServerData()) {
-            logger.info("Testing server {}...", d.getServiceId());
-            stillAlive();
+        int threads = Math.max(1, MonitorConf.get().getScanThreads());
+        ExecutorService pool = Executors.newFixedThreadPool(threads, r -> {
+            Thread t = new Thread(r, "server-scanner-worker");
+            t.setDaemon(true);
+            return t;
+        });
+        try {
+            List<Future<?>> futures = new ArrayList<>();
+            for (ServerData d : ServerList.get().getServerData()) {
+                futures.add(pool.submit(() -> testServer(c, d)));
+            }
+            for (Future<?> f : futures) {
+                try {
+                    f.get();
+                } catch (Exception ex) {
+                    logger.error("Server test task failed", ex);
+                }
+            }
+        } finally {
+            pool.shutdown();
+            try {
+                pool.awaitTermination(1, TimeUnit.MINUTES);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    private void testServer(HttpClient c, ServerData d) {
+        logger.info("Testing server {}...", d.getServiceId());
+        stillAlive();
 //			if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
 //				ServerInfo i = (ServerInfo) d.getServerInfo();
 //				if (i == null) {
@@ -385,7 +422,6 @@ public class ServerScanner implements ICode {
                     d.reportTestFailure("INACCESSIBLE");
                 }
             }
-        }
     }
 
     private boolean wasSuccessful(HttpResponse resp) {
