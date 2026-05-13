@@ -1,3 +1,13 @@
+## [1.2.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.1.0...nanopub-monitor-1.2.0) (2026-05-13)
+
+### Features
+
+* **scanner:** parallelize server scan and lower scan-freq to 120s ([4a869a0](https://github.com/knowledgepixels/nanopub-monitor/commit/4a869a02a064a9c11ecabbe1d88b35cd83b4c47d))
+
+### General maintenance
+
+* setting next snapshot version [skip ci] ([876acd1](https://github.com/knowledgepixels/nanopub-monitor/commit/876acd1dfd51785dcd052be2e310275db9d814f3))
+
 ## [1.1.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.0.1...nanopub-monitor-1.1.0) (2026-05-12)
 
 ### Features
