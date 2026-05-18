@@ -59,6 +59,7 @@ div.servertable {
 
 table {
   font-size: inherit;
+  margin: 0 auto;
 }
 
 table, th, td {

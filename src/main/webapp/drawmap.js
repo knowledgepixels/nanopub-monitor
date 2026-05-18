@@ -47,3 +47,13 @@ Raphael("map", 1000, 400, function () {
     go(attr, points[i][1], points[i][2]);
   }
 });
+
+function syncMapWidth() {
+  var map = document.getElementById("map");
+  var table = document.querySelector(".servertable table");
+  if (map && table) {
+    map.style.maxWidth = table.offsetWidth + "px";
+  }
+}
+window.addEventListener("load", syncMapWidth);
+window.addEventListener("resize", syncMapWidth);
