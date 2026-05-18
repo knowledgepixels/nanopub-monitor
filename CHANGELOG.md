@@ -1,3 +1,15 @@
+## [1.3.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.2.0...nanopub-monitor-1.3.0) (2026-05-18)
+
+### Features
+
+* **scanner:** show nanopub-server protocolVersion as Version ([3f54db4](https://github.com/knowledgepixels/nanopub-monitor/commit/3f54db4dd6bf2659f5c96a04245f9b0d10bf8b5c))
+* **scanner:** use Nanopub-Query-Loaded-Nanopub-Count header for query count ([4964f7b](https://github.com/knowledgepixels/nanopub-monitor/commit/4964f7b760a62014f71c90f90e5087ef852df670))
+* **ui:** center main table and cap map width to table width ([99f0f23](https://github.com/knowledgepixels/nanopub-monitor/commit/99f0f233d39eaa3bda3d61364d6e11ca44e700d2))
+
+### General maintenance
+
+* setting next snapshot version [skip ci] ([88e6002](https://github.com/knowledgepixels/nanopub-monitor/commit/88e60023a4314735a00475c7d82fa48c3d7e0c44))
+
 ## [1.2.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.1.0...nanopub-monitor-1.2.0) (2026-05-13)
 
 ### Features
