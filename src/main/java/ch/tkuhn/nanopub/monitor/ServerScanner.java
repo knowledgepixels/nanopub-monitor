@@ -394,6 +394,7 @@ public class ServerScanner implements ICode {
                             if (body.has("nextNanopubNo") && !body.get("nextNanopubNo").isJsonNull()) {
                                 d.setNanopubCount(body.get("nextNanopubNo").getAsLong());
                             }
+                            d.setVersion(jsonString(body, "protocolVersion"));
                         } catch (Exception ex) {
                             logger.info("Could not parse nanopub-server JSON body: {}", ex.getMessage());
                         }
