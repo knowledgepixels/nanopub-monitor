@@ -35,6 +35,7 @@ public class ServerData implements Serializable {
     private String distanceString = null;
     private long totalResponseTime = 0;
     private String trustStateHash;
+    private String loadedNanopubChecksum;
     private String currentSetting;
     private String originalSetting;
     private Long nanopubCount;
@@ -270,8 +271,47 @@ public class ServerData implements Serializable {
      * @return the short hash, or ""
      */
     public String getTrustStateHashShort() {
-        if (trustStateHash == null || trustStateHash.length() < 12) return trustStateHash == null ? "" : trustStateHash;
-        return trustStateHash.substring(0, 12);
+        return shortHash(trustStateHash);
+    }
+
+    /**
+     * Get the checksum of loaded nanopubs last reported by this server, or null if unknown
+     * (e.g. for non-query types, or if the server has not yet been scanned). Reported by
+     * nanopub-query instances via the {@code Nanopub-Query-Loaded-Nanopub-Checksum} header.
+     *
+     * @return the loaded-nanopub checksum, or null
+     */
+    public String getLoadedNanopubChecksum() {
+        return loadedNanopubChecksum;
+    }
+
+    /**
+     * Set the checksum of loaded nanopubs for this server.
+     *
+     * @param checksum the loaded-nanopub checksum (may be null)
+     */
+    public void setLoadedNanopubChecksum(String checksum) {
+        this.loadedNanopubChecksum = checksum;
+    }
+
+    /**
+     * Get a short prefix of the loaded-nanopub checksum suitable for display, or "" if unknown.
+     *
+     * @return the short checksum, or ""
+     */
+    public String getLoadedNanopubChecksumShort() {
+        return shortHash(loadedNanopubChecksum);
+    }
+
+    /**
+     * Short prefix of a hash/checksum string for compact display, or "" if null.
+     *
+     * @param hash the hash or checksum
+     * @return the first 12 characters, the whole value if shorter, or ""
+     */
+    private static String shortHash(String hash) {
+        if (hash == null) return "";
+        return hash.length() < 12 ? hash : hash.substring(0, 12);
     }
 
     /**
