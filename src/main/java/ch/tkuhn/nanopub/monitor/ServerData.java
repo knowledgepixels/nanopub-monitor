@@ -13,8 +13,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Data about a nanopublication server, including its service description, IP-based geolocation info,
@@ -51,10 +51,12 @@ public class ServerData implements Serializable {
      * @param service the nanopublication service
      * @param info    optional additional server info (may be null)
      */
+    /** Query ip-api.com for a given host at most once per this interval (10 minutes). */
+    private static final long IP_INFO_TTL_MS = 10 * 60 * 1000;
+
     public ServerData(NanopubService service, Object info) {
         this.service = service;
         update(info);
-        getIpInfo();
     }
 
     /**
@@ -70,13 +72,8 @@ public class ServerData implements Serializable {
     }
 
     private void ensureIpInfoLoaded() {
-        if (ipInfo != null && ipInfo != ServerIpInfo.empty) {
-            // already loaded
-            return;
-        }
-        long now = System.currentTimeMillis();
-        if (now - lastIpInfoRetrieval > 1000 * 60 * 10) {
-            // retry every 10 minutes
+        if (ipInfo == null || System.currentTimeMillis() - lastIpInfoRetrieval >= IP_INFO_TTL_MS) {
+            // (re)load at most every 10 minutes; the actual ip-api.com call is throttled in fetchIpInfo
             loadIpInfo();
         }
     }
@@ -136,9 +133,7 @@ public class ServerData implements Serializable {
      * @return the ServerIpInfo object (never null; may be empty)
      */
     public ServerIpInfo getIpInfo() {
-        if (ipInfo == null) {
-            loadIpInfo();
-        }
+        ensureIpInfoLoaded();
         return ipInfo;
     }
 
@@ -458,20 +453,32 @@ public class ServerData implements Serializable {
         return (int) calculateDistance(sLat, sLng, monitorIpInfo.getLatitude(), monitorIpInfo.getLongitude());
     }
 
-    private static Map<String, ServerIpInfo> ipInfoMap = new HashMap<>();
+    private static final Map<String, ServerIpInfo> ipInfoMap = new ConcurrentHashMap<>();
+    private static final Map<String, Long> ipInfoFetchedAt = new ConcurrentHashMap<>();
 
     /**
      * Fetch IP-based geolocation info for the given host using the ip-api.com service.
+     * <p>
+     * The result is cached per host and the remote service is queried at most once per host
+     * per {@link #IP_INFO_TTL_MS} (10 minutes). The attempt timestamp is recorded up front, so
+     * a failed lookup (e.g. when ip-api.com rate-limits us) is throttled the same way and is not
+     * retried on every scan; within the throttle window the last known value is returned, or
+     * {@link ServerIpInfo#empty} if none was obtained yet.
      *
      * @param host the hostname or IP address to look up
-     * @return the ServerIpInfo object with geolocation data
+     * @return the ServerIpInfo object with geolocation data (never null)
      * @throws IOException        if an I/O error occurs
      * @throws URISyntaxException if the constructed URI is invalid
      */
     public static ServerIpInfo fetchIpInfo(String host) throws IOException, URISyntaxException {
         if (!MonitorConf.get().isGeoIpInfoEnabled()) return ServerIpInfo.empty;
-        if (ipInfoMap.containsKey(host)) return ipInfoMap.get(host);
-        ServerIpInfo serverIpInfo = null;
+        Long fetchedAt = ipInfoFetchedAt.get(host);
+        if (fetchedAt != null && System.currentTimeMillis() - fetchedAt < IP_INFO_TTL_MS) {
+            ServerIpInfo cached = ipInfoMap.get(host);
+            return cached == null ? ServerIpInfo.empty : cached;
+        }
+        ipInfoFetchedAt.put(host, System.currentTimeMillis());
+        ServerIpInfo serverIpInfo;
         URL geoipUrl = new URI("http://ip-api.com/json/" + host).toURL();
         HttpURLConnection con = null;
         try {
