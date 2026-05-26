@@ -405,6 +405,25 @@ public class ServerScanner implements ICode {
                     logger.error("Test failed. Exception: {}", ex.getMessage());
                     d.reportTestFailure("INACCESSIBLE");
                 }
+            } else if (d.hasServiceTypePrefix(NanopubService.NANODASH_TYPE_IRI)) {
+                logger.info("Probing Nanodash status at {}...", d.getServiceId());
+                try {
+                    HttpGet get = new HttpGet(d.getServiceId());
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    HttpResponse resp = c.execute(get);
+                    watch.stop();
+                    if (!wasSuccessful(resp)) {
+                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
+                        d.reportTestFailure("DOWN");
+                    } else {
+                        d.setVersion(headerValue(resp, "Nanodash-Version"));
+                        d.reportTestSuccess(watch.getTime());
+                    }
+                } catch (Exception ex) {
+                    logger.error("Test failed. Exception: {}", ex.getMessage());
+                    d.reportTestFailure("INACCESSIBLE");
+                }
             } else {
                 logger.info("Trying to access {}...", d.getServiceId());
                 try {
