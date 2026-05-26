@@ -1,3 +1,14 @@
+## [1.4.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.3.0...nanopub-monitor-1.4.0) (2026-05-26)
+
+### Features
+
+* reduce scan interval to 10s and throttle ip-api.com lookups ([820931e](https://github.com/knowledgepixels/nanopub-monitor/commit/820931e1ce9bb99f7e3d7cc489492d029d116880))
+* **scanner:** gather and show query loaded-nanopub checksum ([49a12be](https://github.com/knowledgepixels/nanopub-monitor/commit/49a12be7008d4aaea3117cac52a558ef4ca8e708))
+
+### General maintenance
+
+* setting next snapshot version [skip ci] ([4e9821c](https://github.com/knowledgepixels/nanopub-monitor/commit/4e9821ccf8680263d405fdabfa032e2d63be167f))
+
 ## [1.3.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.2.0...nanopub-monitor-1.3.0) (2026-05-18)
 
 ### Features
