@@ -104,6 +104,36 @@ public class ServerList implements Serializable {
             if (h == null) continue;
             counts.merge(h, 1, Integer::sum);
         }
+        return majorityKey(counts);
+    }
+
+    /**
+     * Get the loaded-nanopub checksum reported by the largest number of query instances in the
+     * given test cohort. Used as the consensus value for query instances: those with the same
+     * test-instance status but a different checksum are flagged as outliers. Query instances do
+     * not expose a setting, so consensus is scoped by test-instance status instead — test and
+     * non-test instances load from different networks, so comparing their checksums across that
+     * boundary is not meaningful.
+     *
+     * @param testInstance whether to consider the test cohort (true) or the non-test cohort (false)
+     * @return the majority loaded-nanopub checksum for the cohort, or null if none
+     */
+    public String getMajorityLoadedNanopubChecksum(boolean testInstance) {
+        Map<String, Integer> counts = new HashMap<>();
+        for (ServerData sd : servers.values()) {
+            if (!sd.hasServiceTypePrefix(NanopubService.NANOPUB_QUERY_TYPE_IRI)) continue;
+            if (sd.isTestInstance() != testInstance) continue;
+            String h = sd.getLoadedNanopubChecksum();
+            if (h == null) continue;
+            counts.merge(h, 1, Integer::sum);
+        }
+        return majorityKey(counts);
+    }
+
+    /**
+     * Return the key with the strictly highest count in the given map, or null if the map is empty.
+     */
+    private static String majorityKey(Map<String, Integer> counts) {
         String majority = null;
         int best = 0;
         for (Map.Entry<String, Integer> e : counts.entrySet()) {
@@ -116,23 +146,34 @@ public class ServerList implements Serializable {
     }
 
     /**
-     * Classify a registry's trust state hash against the consensus of its setting cohort.
-     * Returns "consensus" if it matches the majority for the same setting, "outlier" if it
-     * differs, or null if the server is not a registry, has not reported a hash, or has not
-     * reported a setting.
+     * Classify a server's reported hash against the consensus of its cohort. For registries, the
+     * hash is the trust state hash and the cohort is registries running the same setting; for query
+     * instances, the hash is the loaded-nanopub checksum and the cohort is query instances with the
+     * same test-instance status. Returns "consensus" if it matches the cohort majority, "outlier"
+     * if it differs, or null if the server reports no comparable hash (or, for registries, no
+     * setting).
      *
      * @param sd the server data
      * @return "consensus", "outlier", or null
      */
     public String getHashGroupLabel(ServerData sd) {
-        if (!sd.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) return null;
-        String h = sd.getTrustStateHash();
-        if (h == null) return null;
-        String setting = sd.getCurrentSetting();
-        if (setting == null) return null;
-        String majority = getMajorityTrustStateHashForSetting(setting);
-        if (majority == null) return null;
-        return h.equals(majority) ? "consensus" : "outlier";
+        if (sd.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) {
+            String h = sd.getTrustStateHash();
+            if (h == null) return null;
+            String setting = sd.getCurrentSetting();
+            if (setting == null) return null;
+            String majority = getMajorityTrustStateHashForSetting(setting);
+            if (majority == null) return null;
+            return h.equals(majority) ? "consensus" : "outlier";
+        }
+        if (sd.hasServiceTypePrefix(NanopubService.NANOPUB_QUERY_TYPE_IRI)) {
+            String h = sd.getLoadedNanopubChecksum();
+            if (h == null) return null;
+            String majority = getMajorityLoadedNanopubChecksum(sd.isTestInstance());
+            if (majority == null) return null;
+            return h.equals(majority) ? "consensus" : "outlier";
+        }
+        return null;
     }
 
     /**

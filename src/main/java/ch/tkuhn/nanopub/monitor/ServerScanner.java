@@ -364,6 +364,7 @@ public class ServerScanner implements ICode {
                     } else {
                         d.setVersion(headerValue(resp, "Nanopub-Query-Version"));
                         d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Query-Loaded-Nanopub-Count")));
+                        d.setLoadedNanopubChecksum(headerValue(resp, "Nanopub-Query-Loaded-Nanopub-Checksum"));
                         d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Query-Registry-Test-Instance")));
                         String headerStatus = headerValue(resp, "Nanopub-Query-Status");
                         if (headerStatus == null || !headerStatus.equalsIgnoreCase("READY")) {

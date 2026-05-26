@@ -41,7 +41,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
     public IResource get() {
         StringWriter sw = new StringWriter();
         CSVWriter w = new CSVWriter(sw);
-        w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Nanopub Count", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
+        w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
         ServerList sl = ServerList.get();
         for (ServerData sd : sl.getSortedServerData()) {
             Float sr = sd.getSuccessRatio();
@@ -50,6 +50,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
             ServerIpInfo i = sd.getIpInfo();
             String hash = sd.getTrustStateHash();
             String group = sl.getHashGroupLabel(sd);
+            String checksum = sd.getLoadedNanopubChecksum();
             Long npc = sd.getNanopubCount();
             w.writeNext(new String[]{
                     sd.getServiceId(),
@@ -61,6 +62,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
                     (sd.getOriginalSetting() == null ? "" : sd.getOriginalSetting()),
                     (hash == null ? "" : hash),
                     (group == null ? "" : group),
+                    (checksum == null ? "" : checksum),
                     (npc == null ? "" : npc.toString()),
                     (sr == null ? "" : sr + ""),
                     (rt == null ? "" : rt + ""),

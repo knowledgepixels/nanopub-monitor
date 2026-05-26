@@ -51,6 +51,7 @@ public class JsonStatus implements SerializableSupplier<IResource> {
             s.put("originalSetting", sd.getOriginalSetting());
             s.put("trustStateHash", sd.getTrustStateHash());
             s.put("hashGroup", sl.getHashGroupLabel(sd));
+            s.put("loadedNanopubChecksum", sd.getLoadedNanopubChecksum());
             s.put("nanopubCount", sd.getNanopubCount());
             s.put("okRatio", sd.getSuccessRatio());
             s.put("respTimeMs", sd.getAvgResponseTimeInMs());

@@ -122,13 +122,16 @@ public class MonitorPage extends WebPage {
     }
 
     /**
-     * Format the trust hash table cell, combining setting and hash:
+     * Format the setting/checksum table cell, combining setting and hash:
      *   "<setting> / <hash> (<group>)"
      * with "<origSetting> → <currentSetting> / ..." when the setting was changed at runtime.
+     * The hash is the registry trust state hash, falling back to the query instance's
+     * loaded-nanopub checksum (query instances have no setting and no consensus group).
      * Returns "" if neither a setting nor a hash is known.
      */
     static String formatTrustHashCell(ServerData d, String groupLabel) {
         String hashShort = d.getTrustStateHashShort();
+        if (hashShort.isEmpty()) hashShort = d.getLoadedNanopubChecksumShort();
         String current = d.getCurrentSetting();
         String original = d.getOriginalSetting();
         if (hashShort.isEmpty() && current == null) return "";
