@@ -31,7 +31,7 @@
 
     <!-- dependency versions -->
     <wicket.version>10.9.0</wicket.version>
-    <slf4j.version>2.0.17</slf4j.version>
+    <slf4j.version>2.0.18</slf4j.version>
     <nanopub.version>1.90.0</nanopub.version>
     <google.gson.version>2.14.0</google.gson.version>
     <opencsv.version>5.12.0</opencsv.version>
