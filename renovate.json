@@ -7,7 +7,7 @@
   "packageRules": [
     {
       "description": "Updates to the parent dependencies should trigger a new patch release",
-      "matchPaths": [
+      "matchFileNames": [
         "pom.xml"
       ],
       "semanticCommitType": "chore",
@@ -15,7 +15,7 @@
     },
     {
       "description": "Updates to the dependencies under the build settings element should not trigger any release",
-      "matchPaths": [
+      "matchFileNames": [
         "pom.xml"
       ],
       "matchDepTypes": [
@@ -26,7 +26,7 @@
     },
     {
       "description": "Updates to the dependencies with scope 'test' should be tagged as 'test(deps)'",
-      "matchPaths": [
+      "matchFileNames": [
         "pom.xml"
       ],
       "matchDepTypes": [
