@@ -34,7 +34,7 @@
     <nanopub.version>1.90.0</nanopub.version>
     <google.gson.version>2.14.0</google.gson.version>
     <opencsv.version>5.12.0</opencsv.version>
-    <junit.jupiter.version>5.14.4</junit.jupiter.version>
+    <junit-jupiter.version>6.1.0</junit-jupiter.version>
 
     <!-- allowed values: R7, 1.0, 1.5, 2.0 or none -->
     <wtp.version>none</wtp.version>
@@ -46,6 +46,18 @@
       <url>https://jitpack.io</url>
     </repository>
   </repositories>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit-jupiter.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -82,7 +94,6 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
