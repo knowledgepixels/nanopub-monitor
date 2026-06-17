@@ -4,6 +4,9 @@
     "local>ashleycaselli/renovate-config"
   ],
   "automerge": false,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "description": "Updates to the parent dependencies should trigger a new patch release",
@@ -38,7 +41,7 @@
     {
       "description": "Updates to the dependencies defined in package.json should be tagged as 'build(deps)'",
       "matchFileNames": [
-        "package*.json"
+        "package.json"
       ],
       "semanticCommitType": "build",
       "semanticCommitScope": "deps"
