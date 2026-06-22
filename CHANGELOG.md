@@ -1,3 +1,48 @@
+## [1.5.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.4.0...nanopub-monitor-1.5.0) (2026-06-22)
+
+### Features
+
+* **monitor:** auto-refresh counts and table via Ajax every 10s ([50de408](https://github.com/knowledgepixels/nanopub-monitor/commit/50de408b546d1d92e07c7161ef1f7837838885d4))
+* **scanner:** show Nanodash version from Nanodash-Version header ([e8f4e1f](https://github.com/knowledgepixels/nanopub-monitor/commit/e8f4e1fb3550e3841ce45ef01c8123b2a7321ae5))
+
+### Dependency updates
+
+* **core-deps:** update org.nanopub:nanopub dependency to v1.90.0 ([9240242](https://github.com/knowledgepixels/nanopub-monitor/commit/92402421564e3d53efb779a222b70bde1116ab33))
+* **core-deps:** update slf4j monorepo to v2.0.18 ([be77d88](https://github.com/knowledgepixels/nanopub-monitor/commit/be77d886678d8fb8071f6582aad0882ab53aaf18))
+* **core-deps:** update wicket.version to v10.9.1 ([7c68418](https://github.com/knowledgepixels/nanopub-monitor/commit/7c6841885cafb0718955653beb8732e434f46386))
+* **deps:** update dependency maven to v3.9.16 ([ec64b30](https://github.com/knowledgepixels/nanopub-monitor/commit/ec64b30c7a7eab2572cc19b3c74e50a788ed86cc))
+* **deps:** update eclipse-temurin docker tag to v25 ([15e6275](https://github.com/knowledgepixels/nanopub-monitor/commit/15e6275dbd10520ec8d45018b2bbcde9171f4f21))
+* **deps:** update release dependencies to latest version ([8da9be1](https://github.com/knowledgepixels/nanopub-monitor/commit/8da9be1b234142251640e2e1f6208a1c9b19d52b))
+* **deps:** update tomcat docker tag to v11.0.22 ([332e10e](https://github.com/knowledgepixels/nanopub-monitor/commit/332e10e1e1c7470a9d2785711f3510609aacbb0f))
+
+### Tests
+
+* **deps:** update junit-framework monorepo to v6.1.0 ([a52a39f](https://github.com/knowledgepixels/nanopub-monitor/commit/a52a39f928e8c0a7322828ad21d90f8921b3a53a))
+
+### Build and continuous integration
+
+* **deps:** lock file maintenance ([f45d9b6](https://github.com/knowledgepixels/nanopub-monitor/commit/f45d9b6f8d44f7223c18052adfd1ce46a4991675))
+* **deps:** lock file maintenance ([44e8689](https://github.com/knowledgepixels/nanopub-monitor/commit/44e86892e7f9b1223430f67b407e2b02997cdd0b))
+* **deps:** update action actions/setup-java to v5.2.0 ([25d3f84](https://github.com/knowledgepixels/nanopub-monitor/commit/25d3f84254cfef9bf7168397501ac9cf0674eafc))
+* **deps:** update actions/checkout action to v6.0.3 ([92a0161](https://github.com/knowledgepixels/nanopub-monitor/commit/92a0161a4fcc6bac0a9def995c9c3a2ba377406b))
+* **deps:** update actions/checkout action to v7 ([b5051fe](https://github.com/knowledgepixels/nanopub-monitor/commit/b5051feb7f31e04d5f0d231aeab4069755ca56a0))
+* **deps:** update actions/setup-java action to v5.3.0 ([585fc42](https://github.com/knowledgepixels/nanopub-monitor/commit/585fc42dbef0b5d57860caaeda576865821b041d))
+* **deps:** update actions/setup-node action to v6 ([21fa015](https://github.com/knowledgepixels/nanopub-monitor/commit/21fa015f520ea441be16375b1fc9175949289229))
+* **deps:** update dependency node to v22.23.0 ([9f139d4](https://github.com/knowledgepixels/nanopub-monitor/commit/9f139d4a8d3ae197019c21f95a7b471d896d5cdd))
+* **deps:** update dependency node to v24 ([bbc3d80](https://github.com/knowledgepixels/nanopub-monitor/commit/bbc3d80546915df1e0f684ed74c0186e84b42c76))
+* **deps:** update jacoco.maven.plugin.version to v0.8.15 ([8f31189](https://github.com/knowledgepixels/nanopub-monitor/commit/8f31189b57d60fbc42bd4e15f2c70dbecd09ce5e))
+* **deps:** update maven-compiler-plugin to v3.15.0 ([2261067](https://github.com/knowledgepixels/nanopub-monitor/commit/2261067e6510c4d5c670d49e802f80c4c724fbd6))
+* **deps:** update maven.surefire.plugin.version to v3.5.6 ([8fe8939](https://github.com/knowledgepixels/nanopub-monitor/commit/8fe8939135bd5f387391177e1585452c192e810f))
+
+### General maintenance
+
+* add Renovate configuration for update dependency management ([41f2de1](https://github.com/knowledgepixels/nanopub-monitor/commit/41f2de1ac16c6c97515dbe7187815a4a658c7f85))
+* **config:** migrate config renovate.json ([ee25c24](https://github.com/knowledgepixels/nanopub-monitor/commit/ee25c2447c5a735b3575ae8a8e0d5d26480d5698))
+* move dependency versions to properties section for better management ([29dcb50](https://github.com/knowledgepixels/nanopub-monitor/commit/29dcb507b917a3b63d2b9d55da56cdd07e07bd54))
+* **renovate:** enable lock file maintenance ([91328da](https://github.com/knowledgepixels/nanopub-monitor/commit/91328da3d729c51a4fa1c0bce522b36aa35e0695))
+* replace source/target with release argument ([674b83a](https://github.com/knowledgepixels/nanopub-monitor/commit/674b83a2e001a462ce977fac4237389c84931610))
+* setting next snapshot version [skip ci] ([063066e](https://github.com/knowledgepixels/nanopub-monitor/commit/063066edd28bb80217c0b74d79d510678c5be2ee))
+
 ## [1.4.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.3.0...nanopub-monitor-1.4.0) (2026-05-26)
 
 ### Features
