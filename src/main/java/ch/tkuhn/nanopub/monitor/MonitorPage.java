@@ -1,21 +1,27 @@
 package ch.tkuhn.nanopub.monitor;
 
 import org.apache.wicket.AttributeModifier;
+import org.apache.wicket.ajax.AbstractAjaxTimerBehavior;
+import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.markup.head.IHeaderResponse;
 import org.apache.wicket.markup.head.JavaScriptReferenceHeaderItem;
+import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.link.ExternalLink;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.markup.repeater.data.ListDataProvider;
+import org.apache.wicket.model.IModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -37,15 +43,12 @@ public class MonitorPage extends WebPage {
      */
     public MonitorPage(final PageParameters parameters) {
         super(parameters);
-        final ServerList sl = ServerList.get();
-        final Set<String> ipAddresses = new HashSet<String>();
         if (MonitorConf.get().showMap()) {
-            for (ServerData sd : sl.getServerData()) {
+            for (ServerData sd : ServerList.get().getServerData()) {
                 try {
                     ServerIpInfo ipInfo = sd.getIpInfo();
                     NanopubService s = sd.getService();
                     points += "[\"" + ipInfo.getLatitude() + "," + ipInfo.getLongitude() + "\",\"" + s.getMapColor() + "\",[" + s.getMapOffsetX() + "," + s.getMapOffsetY() + "]],";
-                    ipAddresses.add(ipInfo.getIp());
                 } catch (Exception ex) {
                     logger.error("Something went wrong while getting coordinates", ex);
                 }
@@ -53,14 +56,39 @@ public class MonitorPage extends WebPage {
             points = points.replaceFirst(",$", "");
         }
 
-        add(new Label("server-count", sl.getServerCount() + ""));
-        add(new Label("server-ip-count", ipAddresses.size() + ""));
+        // The counts and the table are re-read from the live ServerList on every
+        // render, so an Ajax timer can repaint just these without a full page reload.
+        final WebMarkupContainer counts = new WebMarkupContainer("counts");
+        counts.setOutputMarkupId(true);
+        counts.add(new Label("server-count", new IModel<String>() {
+            private static final long serialVersionUID = 1L;
+            public String getObject() { return ServerList.get().getServerCount() + ""; }
+        }));
+        counts.add(new Label("server-ip-count", new IModel<String>() {
+            private static final long serialVersionUID = 1L;
+            public String getObject() { return distinctServerIpCount() + ""; }
+        }));
+        add(counts);
 
-        add(new DataView<ServerData>("rows", new ListDataProvider<ServerData>(sl.getSortedServerData())) {
+        final WebMarkupContainer tableContainer = new WebMarkupContainer("tablecontainer");
+        tableContainer.setOutputMarkupId(true);
+        add(tableContainer);
+
+        tableContainer.add(new DataView<ServerData>("rows", new ListDataProvider<ServerData>() {
+
+            private static final long serialVersionUID = 8901243870718834567L;
+
+            @Override
+            protected List<ServerData> getData() {
+                return ServerList.get().getSortedServerData();
+            }
+
+        }) {
 
             private static final long serialVersionUID = 4703849210371741467L;
 
             public void populateItem(final Item<ServerData> item) {
+                ServerList sl = ServerList.get();
                 ServerData d = item.getModelObject();
                 ServerIpInfo i = d.getIpInfo();
                 ExternalLink urlLink = new ExternalLink("urllink", d.getServiceId());
@@ -101,6 +129,19 @@ public class MonitorPage extends WebPage {
 
         });
 
+        // Poll every 10 seconds and repaint only the counts and the table.
+        tableContainer.add(new AbstractAjaxTimerBehavior(Duration.ofSeconds(10)) {
+
+            private static final long serialVersionUID = 6657894561239871045L;
+
+            @Override
+            protected void onTimer(AjaxRequestTarget target) {
+                target.add(counts);
+                target.add(tableContainer);
+            }
+
+        });
+
         ServerScanner.initDaemon();
     }
 
@@ -119,6 +160,28 @@ public class MonitorPage extends WebPage {
     static String formatDate(Date date) {
         if (date == null) return "";
         return dateFormat.format(date);
+    }
+
+    /**
+     * Count the distinct (non-null) IP addresses across all known servers, used as the
+     * approximate "distinct servers" figure. Computed from the live ServerList on each call
+     * so it stays current across Ajax refreshes.
+     *
+     * @return the number of distinct server IP addresses
+     */
+    private static int distinctServerIpCount() {
+        Set<String> ipAddresses = new HashSet<String>();
+        for (ServerData sd : ServerList.get().getServerData()) {
+            try {
+                ServerIpInfo ipInfo = sd.getIpInfo();
+                if (ipInfo != null && ipInfo.getIp() != null) {
+                    ipAddresses.add(ipInfo.getIp());
+                }
+            } catch (Exception ex) {
+                logger.error("Something went wrong while getting IP info", ex);
+            }
+        }
+        return ipAddresses.size();
     }
 
     /**

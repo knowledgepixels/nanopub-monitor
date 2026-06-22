@@ -14,7 +14,7 @@
 
 <h1>Nanopub Monitor</h1>
 
-<p>
+<p wicket:id="counts">
   <span wicket:id="server-count"></span> <strong>nanopub services</strong>
   running on approximately <span wicket:id="server-ip-count"></span> <strong>distinct servers</strong>
 </p>
@@ -22,7 +22,7 @@
 <div id="map"></div>
 <script src="drawmap.js?v=4"></script>
 
-<div class="servertable">
+<div class="servertable" wicket:id="tablecontainer">
   <table>
     <tr>
       <th>URL</th>
