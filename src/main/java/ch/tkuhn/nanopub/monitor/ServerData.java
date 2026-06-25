@@ -46,16 +46,16 @@ public class ServerData implements Serializable {
     int countFailure = 0;
 
     /**
-     * Creates a new ServerData instance for the given nanopublication service and optional server info.
-     *
-     * @param service the nanopublication service
-     * @param info    optional additional server info (may be null)
-     */
-    /**
      * Query ip-api.com for a given host at most once per this interval (10 minutes).
      */
     private static final long IP_INFO_TTL_MS = 10 * 60 * 1000;
 
+    /**
+     * Creates a new ServerData instance for the given nanopublication service and optional server info.
+     *
+     * @param service the nanopublication service
+     * @param info    optional additional server info (might be null)
+     */
     public ServerData(NanopubService service, Object info) {
         this.service = service;
         update(info);
@@ -64,7 +64,7 @@ public class ServerData implements Serializable {
     /**
      * Update the server info and ensure IP info is loaded.
      *
-     * @param info new server info (may be null)
+     * @param info new server info (might be null)
      */
     public void update(Object info) {
         if (info != null) {
@@ -123,7 +123,7 @@ public class ServerData implements Serializable {
     /**
      * Get additional server info.
      *
-     * @return the server info object (may be null)
+     * @return the server info object (might be null)
      */
     public Object getServerInfo() {
         return info;
@@ -132,7 +132,7 @@ public class ServerData implements Serializable {
     /**
      * Get the IP-based geolocation info of the server.
      *
-     * @return the ServerIpInfo object (never null; may be empty)
+     * @return the ServerIpInfo object (never null; might be empty)
      */
     public ServerIpInfo getIpInfo() {
         ensureIpInfoLoaded();
@@ -154,7 +154,7 @@ public class ServerData implements Serializable {
     /**
      * Get the date when the server was last seen as OK.
      *
-     * @return the last seen OK date (may be null if never seen OK)
+     * @return the last seen OK date (might be null if never seen OK)
      */
     public Date getLastSeenDate() {
         return lastSeenOk;
@@ -258,7 +258,7 @@ public class ServerData implements Serializable {
     /**
      * Set the Nanopub-Registry trust state hash for this server.
      *
-     * @param hash the trust state hash (may be null)
+     * @param hash the trust state hash (might be null)
      */
     public void setTrustStateHash(String hash) {
         this.trustStateHash = hash;
@@ -287,7 +287,7 @@ public class ServerData implements Serializable {
     /**
      * Set the checksum of loaded nanopubs for this server.
      *
-     * @param checksum the loaded-nanopub checksum (may be null)
+     * @param checksum the loaded-nanopub checksum (might be null)
      */
     public void setLoadedNanopubChecksum(String checksum) {
         this.loadedNanopubChecksum = checksum;
@@ -327,7 +327,7 @@ public class ServerData implements Serializable {
     /**
      * Set the current setting trusty URI.
      *
-     * @param setting the setting URI (may be null)
+     * @param setting the setting URI (might be null)
      */
     public void setCurrentSetting(String setting) {
         this.currentSetting = setting;
@@ -346,7 +346,7 @@ public class ServerData implements Serializable {
     /**
      * Set the original setting trusty URI.
      *
-     * @param setting the setting URI (may be null)
+     * @param setting the setting URI (might be null)
      */
     public void setOriginalSetting(String setting) {
         this.originalSetting = setting;
@@ -377,7 +377,7 @@ public class ServerData implements Serializable {
     /**
      * Set the nanopub count for this server.
      *
-     * @param count the nanopub count (may be null)
+     * @param count the nanopub count (might be null)
      */
     public void setNanopubCount(Long count) {
         this.nanopubCount = count;
@@ -407,7 +407,7 @@ public class ServerData implements Serializable {
     /**
      * Set the server software version.
      *
-     * @param version the version string (may be null)
+     * @param version the version string (might be null)
      */
     public void setVersion(String version) {
         this.version = version;
