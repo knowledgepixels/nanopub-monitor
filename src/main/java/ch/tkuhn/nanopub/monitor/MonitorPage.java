@@ -17,8 +17,8 @@ import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +31,7 @@ public class MonitorPage extends WebPage {
 
     private static final long serialVersionUID = -2069078890268133150L;
 
-    private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private static final Logger logger = LoggerFactory.getLogger(MonitorPage.class);
     private String points = "";
@@ -43,6 +43,7 @@ public class MonitorPage extends WebPage {
      */
     public MonitorPage(final PageParameters parameters) {
         super(parameters);
+        logger.debug("Constructing MonitorPage");
         if (MonitorConf.get().showMap()) {
             for (ServerData sd : ServerList.get().getServerData()) {
                 try {
@@ -50,7 +51,7 @@ public class MonitorPage extends WebPage {
                     NanopubService s = sd.getService();
                     points += "[\"" + ipInfo.getLatitude() + "," + ipInfo.getLongitude() + "\",\"" + s.getMapColor() + "\",[" + s.getMapOffsetX() + "," + s.getMapOffsetY() + "]],";
                 } catch (Exception ex) {
-                    logger.error("Something went wrong while getting coordinates", ex);
+                    logger.error("Could not get map coordinates for server '{}'", sd.getServiceId(), ex);
                 }
             }
             points = points.replaceFirst(",$", "");
@@ -62,11 +63,17 @@ public class MonitorPage extends WebPage {
         counts.setOutputMarkupId(true);
         counts.add(new Label("server-count", new IModel<String>() {
             private static final long serialVersionUID = 1L;
-            public String getObject() { return ServerList.get().getServerCount() + ""; }
+
+            public String getObject() {
+                return ServerList.get().getServerCount() + "";
+            }
         }));
         counts.add(new Label("server-ip-count", new IModel<String>() {
             private static final long serialVersionUID = 1L;
-            public String getObject() { return distinctServerIpCount() + ""; }
+
+            public String getObject() {
+                return distinctServerIpCount() + "";
+            }
         }));
         add(counts);
 
@@ -158,7 +165,9 @@ public class MonitorPage extends WebPage {
      * @return the formatted date string, or an empty string if the date is null
      */
     static String formatDate(Date date) {
-        if (date == null) return "";
+        if (date == null) {
+            return "";
+        }
         return dateFormat.format(date);
     }
 
@@ -178,7 +187,7 @@ public class MonitorPage extends WebPage {
                     ipAddresses.add(ipInfo.getIp());
                 }
             } catch (Exception ex) {
-                logger.error("Something went wrong while getting IP info", ex);
+                logger.error("Could not get IP info for server '{}'", sd.getServiceId(), ex);
             }
         }
         return ipAddresses.size();
@@ -186,7 +195,7 @@ public class MonitorPage extends WebPage {
 
     /**
      * Format the setting/checksum table cell, combining setting and hash:
-     *   "<setting> / <hash> (<group>)"
+     * "<setting> / <hash> (<group>)"
      * with "<origSetting> → <currentSetting> / ..." when the setting was changed at runtime.
      * The hash is the registry trust state hash, falling back to the query instance's
      * loaded-nanopub checksum (query instances have no setting and no consensus group).
@@ -194,10 +203,14 @@ public class MonitorPage extends WebPage {
      */
     static String formatTrustHashCell(ServerData d, String groupLabel) {
         String hashShort = d.getTrustStateHashShort();
-        if (hashShort.isEmpty()) hashShort = d.getLoadedNanopubChecksumShort();
+        if (hashShort.isEmpty()) {
+            hashShort = d.getLoadedNanopubChecksumShort();
+        }
         String current = d.getCurrentSetting();
         String original = d.getOriginalSetting();
-        if (hashShort.isEmpty() && current == null) return "";
+        if (hashShort.isEmpty() && current == null) {
+            return "";
+        }
         StringBuilder sb = new StringBuilder();
         if (current != null) {
             if (original != null && !original.equals(current)) {
@@ -206,9 +219,13 @@ public class MonitorPage extends WebPage {
             sb.append(ServerData.shortSetting(current));
         }
         if (!hashShort.isEmpty()) {
-            if (sb.length() > 0) sb.append(" / ");
+            if (sb.length() > 0) {
+                sb.append(" / ");
+            }
             sb.append(hashShort);
-            if (groupLabel != null) sb.append(" (").append(groupLabel).append(")");
+            if (groupLabel != null) {
+                sb.append(" (").append(groupLabel).append(")");
+            }
         }
         return sb.toString();
     }

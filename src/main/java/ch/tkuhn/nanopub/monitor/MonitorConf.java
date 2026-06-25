@@ -28,21 +28,33 @@ public class MonitorConf {
 
     private MonitorConf() {
         conf = new Properties();
-        InputStream in = MonitorConf.class.getResourceAsStream("conf.properties");
-        try {
-            conf.load(in);
-        } catch (IOException ex) {
-            logger.error("Could not load configuration file", ex);
+
+        String mainConfFile = "conf.properties";
+        InputStream in = MonitorConf.class.getResourceAsStream(mainConfFile);
+        if (in == null) {
+            logger.error("Configuration file '{}' not found on classpath", mainConfFile);
             System.exit(1);
         }
-        in = MonitorConf.class.getResourceAsStream("local.conf.properties");
+        try {
+            conf.load(in);
+            logger.info("Loaded configuration from '{}'", mainConfFile);
+        } catch (IOException ex) {
+            logger.error("Could not load configuration file '{}'", mainConfFile, ex);
+            System.exit(1);
+        }
+
+        String localConfFile = "local.conf.properties";
+        in = MonitorConf.class.getResourceAsStream(localConfFile);
         if (in != null) {
             try {
                 conf.load(in);
+                logger.info("Loaded local configuration overrides from '{}'", localConfFile);
             } catch (IOException ex) {
-                logger.error("Could not load local configuration file", ex);
+                logger.error("Could not load local configuration file '{}'", localConfFile, ex);
                 System.exit(1);
             }
+        } else {
+            logger.debug("No local configuration file '{}' found, using defaults only", localConfFile);
         }
     }
 

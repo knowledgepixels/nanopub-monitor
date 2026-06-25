@@ -5,6 +5,8 @@ import com.google.gson.GsonBuilder;
 import org.apache.wicket.request.resource.ByteArrayResource;
 import org.apache.wicket.request.resource.IResource;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -22,6 +24,7 @@ public class JsonStatus implements SerializableSupplier<IResource> {
 
     private static final JsonStatus instance = new JsonStatus();
     private static final Gson gson = new GsonBuilder().serializeNulls().create();
+    private static final Logger logger = LoggerFactory.getLogger(JsonStatus.class);
 
     public static JsonStatus instance() {
         return instance;
@@ -32,6 +35,7 @@ public class JsonStatus implements SerializableSupplier<IResource> {
 
     @Override
     public IResource get() {
+        logger.debug("Generating JSON status export of current server data");
         ServerList sl = ServerList.get();
 
         Map<String, Object> root = new LinkedHashMap<>();
@@ -65,7 +69,14 @@ public class JsonStatus implements SerializableSupplier<IResource> {
         }
         root.put("servers", servers);
 
-        byte[] body = gson.toJson(root).getBytes(StandardCharsets.UTF_8);
+        byte[] body;
+        try {
+            body = gson.toJson(root).getBytes(StandardCharsets.UTF_8);
+        } catch (RuntimeException ex) {
+            logger.error("Failed to serialize JSON status for {} servers", servers.size(), ex);
+            throw ex;
+        }
+        logger.debug("JSON status export complete: serialized {} servers, {} bytes", servers.size(), body.length);
         return new ByteArrayResource("application/json", body);
     }
 

@@ -17,7 +17,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
 
     private static final long serialVersionUID = 7196507056520414804L;
 
-    private static CsvTable instance = new CsvTable();
+    private static final CsvTable instance = new CsvTable();
     private static final Logger logger = LoggerFactory.getLogger(CsvTable.class);
 
     /**
@@ -39,10 +39,12 @@ public class CsvTable implements SerializableSupplier<IResource> {
      */
     @Override
     public IResource get() {
+        logger.debug("Generating CSV export of current server data");
         StringWriter sw = new StringWriter();
         CSVWriter w = new CSVWriter(sw);
         w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
         ServerList sl = ServerList.get();
+        int rowCount = 0;
         for (ServerData sd : sl.getSortedServerData()) {
             Float sr = sd.getSuccessRatio();
             Integer rt = sd.getAvgResponseTimeInMs();
@@ -71,13 +73,15 @@ public class CsvTable implements SerializableSupplier<IResource> {
                     (i == null ? "" : i.getIp()),
                     (i == null ? "" : i.getCity() + ", " + i.getCountryName()),
             });
+            rowCount++;
         }
         try {
             w.close();
             sw.close();
         } catch (IOException ex) {
-            logger.error("Error closing CSV writer", ex);
+            logger.error("Failed to close CSV writer after writing {} server rows", rowCount, ex);
         }
+        logger.debug("CSV export complete: wrote {} server rows", rowCount);
         return new ByteArrayResource("text/csv", sw.getBuffer().toString().getBytes());
     }
 

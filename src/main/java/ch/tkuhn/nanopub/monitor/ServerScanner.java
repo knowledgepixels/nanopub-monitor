@@ -21,6 +21,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -44,7 +45,7 @@ public class ServerScanner implements ICode {
     public static void initDaemon() {
         if (singleton != null) {
             if (singleton.aliveAtTime + 10 * 60 * 1000 < System.currentTimeMillis()) {
-                singleton.logger.info("No sign of life of the daemon for 10 minutes. Starting new one.");
+                singleton.logger.info("Server-scanner daemon has shown no sign of life for over 10 minutes (last alive at {}); restarting it", new Date(singleton.aliveAtTime));
                 singleton = null;
                 scanTask.interrupt();
             } else {
@@ -67,9 +68,10 @@ public class ServerScanner implements ICode {
     @Override
     public void run(Logger logger) {
         this.logger = logger;
-        logger.info("Scan servers...");
+        logger.info("Starting nanopub server scan cycle");
         ServerList.get().refresh();
         stillAlive();
+        logger.debug("Server list refreshed: {} servers known, beginning tests", ServerList.get().getServerCount());
         testServers();
     }
 
@@ -94,7 +96,7 @@ public class ServerScanner implements ICode {
                 try {
                     f.get();
                 } catch (Exception ex) {
-                    logger.error("Server test task failed", ex);
+                    logger.error("Unexpected error in server test task (this indicates a bug, since testServer() should catch its own exceptions)", ex);
                 }
             }
         } finally {
@@ -105,6 +107,7 @@ public class ServerScanner implements ICode {
                 Thread.currentThread().interrupt();
             }
         }
+        logger.info("Scan cycle complete: tested {} servers", ServerList.get().getServerCount());
     }
 
     private void testServer(HttpClient c, ServerData d) {
@@ -155,294 +158,303 @@ public class ServerScanner implements ICode {
 //					d.reportTestFailure("INACCESSIBLE");
 //				}
 //			} else
-            if (d.hasServiceType(NanopubService.GRLC_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_GRLC_SERVICE_TYPE_IRI)) {
-                logger.info("Trying to access {}get_nanopub_count...", d.getServiceId());
-                try {
-                    HttpGet get = new HttpGet(d.getServiceId() + "get_nanopub_count");
-                    get.setHeader("Accept", "text/csv");
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-                    HttpResponse resp = c.execute(get);
-                    watch.stop();
-                    if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
-                        d.reportTestFailure("DOWN");
-                    } else {
-                        CSVReader csvReader = null;
-                        try {
-                            csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
-                            String[] line = null;
-                            int n = 0;
-                            while ((line = csvReader.readNext()) != null) {
-                                n++;
-                                if (n == 1) {
-                                    // ignore header line
-                                } else {
-                                    if (line[0].matches("[0-9]{5,}")) {
-                                        d.reportTestSuccess(watch.getTime());
-                                    } else {
-                                        d.reportTestFailure("BROKEN");
-                                    }
-                                    break;
-                                }
-                            }
-                        } catch (Exception ex) {
-                            logger.info("Test failed. Exception: {}", ex.getMessage());
-                            d.reportTestFailure("BROKEN");
-                        } finally {
-                            if (csvReader != null) csvReader.close();
-                        }
-                    }
-                } catch (Exception ex) {
-                    logger.error("Test failed. Exception: {}", ex.getMessage());
-                    d.reportTestFailure("INACCESSIBLE");
-                }
-            } else if (d.hasServiceType(NanopubService.LDF_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_LDF_SERVICE_TYPE_IRI)) {
-                logger.info("Trying to access {}?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication...", d.getServiceId());
-                try {
-                    HttpGet get = new HttpGet(d.getServiceId() + "?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication");
-                    get.setHeader("Accept", "application/n-quads");
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-                    HttpResponse resp = c.execute(get);
-                    watch.stop();
-                    if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
-                        d.reportTestFailure("DOWN");
-                    } else {
-                        BufferedReader reader = null;
-                        try {
-                            reader = new BufferedReader(new InputStreamReader(resp.getEntity().getContent()));
-                            String line = null;
-                            int count = 0;
-                            while ((line = reader.readLine()) != null) {
-                                if (line.contains(" <http://www.nanopub.org/nschema#Nanopublication> "))
-                                    count = count + 1;
-                            }
-                            if (count >= 100) {
-                                d.reportTestSuccess(watch.getTime());
+        if (d.hasServiceType(NanopubService.GRLC_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_GRLC_SERVICE_TYPE_IRI)) {
+            logger.info("Trying to access {}get_nanopub_count...", d.getServiceId());
+            try {
+                HttpGet get = new HttpGet(d.getServiceId() + "get_nanopub_count");
+                get.setHeader("Accept", "text/csv");
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    CSVReader csvReader = null;
+                    try {
+                        csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
+                        String[] line = null;
+                        int n = 0;
+                        while ((line = csvReader.readNext()) != null) {
+                            n++;
+                            if (n == 1) {
+                                // ignore header line
                             } else {
-                                d.reportTestFailure("BROKEN");
-                            }
-                        } catch (Exception ex) {
-                            logger.info("Test failed. Exception: {}", ex.getMessage());
-                            d.reportTestFailure("BROKEN");
-                        } finally {
-                            if (reader != null) reader.close();
-                        }
-                    }
-                } catch (Exception ex) {
-                    logger.error("Test failed. Exception: {}", ex.getMessage());
-                    d.reportTestFailure("INACCESSIBLE");
-                }
-            } else if (d.hasServiceType(NanopubService.SIGNED_SPARQL_SERVICE_TYPE_IRI)) {
-                String urlSuffix = "?query=select+%3Fx+where+%7B%3Fx+a+%3Fc%7D+limit+100&format=text%2Fcsv";
-                logger.info("Trying to access {}{}...", d.getServiceId(), urlSuffix);
-                try {
-                    HttpGet get = new HttpGet(d.getServiceId() + urlSuffix);
-                    get.setHeader("Accept", "text/csv");
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-                    HttpResponse resp = c.execute(get);
-                    watch.stop();
-                    if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
-                        d.reportTestFailure("DOWN");
-                    } else {
-                        CSVReader csvReader = null;
-                        try {
-                            csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
-                            String[] line;
-                            int count = 0;
-                            while ((csvReader.readNext()) != null) {
-                                count++;
-                            }
-                            if (count >= 100) {
-                                d.reportTestSuccess(watch.getTime());
-                            } else {
-                                d.reportTestFailure("BROKEN");
-                            }
-                        } catch (Exception ex) {
-                            logger.error("Test failed. Exception: {}", ex.getMessage());
-                            d.reportTestFailure("BROKEN");
-                        } finally {
-                            if (csvReader != null) csvReader.close();
-                        }
-                    }
-                } catch (Exception ex) {
-                    logger.error("Test failed. Exception: {}", ex.getMessage());
-                    d.reportTestFailure("INACCESSIBLE");
-                }
-            } else if (d.hasServiceType(NanopubService.NANOPUB_MONITOR_TYPE_IRI)) {
-                logger.info("Trying to access {}.csv...", d.getServiceId());
-                try {
-                    HttpGet get = new HttpGet(d.getServiceId() + ".csv");
-                    get.setHeader("Accept", "text/csv");
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-                    HttpResponse resp = c.execute(get);
-                    watch.stop();
-                    if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
-                        d.reportTestFailure("DOWN");
-                    } else {
-                        d.setVersion(headerValue(resp, "Nanopub-Monitor-Version"));
-                        CSVReader csvReader = null;
-                        try {
-                            csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
-                            String[] line = null;
-                            int n = 0;
-                            while ((line = csvReader.readNext()) != null) {
-                                n++;
-                                if (n == 1) {
-                                    // ignore header line
+                                if (line[0].matches("[0-9]{5,}")) {
+                                    d.reportTestSuccess(watch.getTime());
                                 } else {
-                                    if (line[0].startsWith("http")) {
-                                        d.reportTestSuccess(watch.getTime());
-                                    } else {
-                                        d.reportTestFailure("BROKEN");
-                                    }
-                                    break;
+                                    d.reportTestFailure("BROKEN");
                                 }
+                                break;
                             }
-                        } catch (Exception ex) {
-                            logger.info("Test failed. Exception: {}", ex.getMessage());
-                            d.reportTestFailure("BROKEN");
-                        } finally {
-                            if (csvReader != null) csvReader.close();
+                        }
+                    } catch (Exception ex) {
+                        logger.info("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                        d.reportTestFailure("BROKEN");
+                    } finally {
+                        if (csvReader != null) {
+                            csvReader.close();
                         }
                     }
-                } catch (Exception ex) {
-                    logger.error("Test failed. Exception: {}", ex.getMessage());
-                    d.reportTestFailure("INACCESSIBLE");
                 }
-            } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) {
-                logger.info("Probing registry status at {}.json...", d.getServiceId());
-                try {
-                    HttpGet get = new HttpGet(d.getServiceId() + ".json");
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-                    HttpResponse resp = c.execute(get);
-                    watch.stop();
-                    if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
-                        d.reportTestFailure("DOWN");
-                    } else {
-                        d.setVersion(headerValue(resp, "Nanopub-Registry-Version"));
-                        d.setTrustStateHash(headerValue(resp, "Nanopub-Registry-Trust-State-Hash"));
-                        d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Registry-Nanopub-Count")));
-                        d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Registry-Test-Instance")));
-                        try (Reader r = new InputStreamReader(resp.getEntity().getContent())) {
-                            JsonObject body = JsonParser.parseReader(r).getAsJsonObject();
-                            d.setCurrentSetting(jsonString(body, "currentSetting"));
-                            d.setOriginalSetting(jsonString(body, "originalSetting"));
-                        } catch (Exception ex) {
-                            logger.info("Could not parse registry JSON body: {}", ex.getMessage());
-                        }
-                        String headerStatus = headerValue(resp, "Nanopub-Registry-Status");
-                        if (!NanopubServerUtils.isReadyRegistryStatus(headerStatus)) {
-                            d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
-                        } else {
-                            d.reportTestSuccess(watch.getTime());
-                        }
-                    }
-                } catch (Exception ex) {
-                    logger.error("Test failed. Exception: {}", ex.getMessage());
-                    d.reportTestFailure("INACCESSIBLE");
-                }
-            } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_QUERY_TYPE_IRI)) {
-                logger.info("Probing query status at {}...", d.getServiceId());
-                try {
-                    HttpGet get = new HttpGet(d.getServiceId());
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-                    HttpResponse resp = c.execute(get);
-                    watch.stop();
-                    if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
-                        d.reportTestFailure("DOWN");
-                    } else {
-                        d.setVersion(headerValue(resp, "Nanopub-Query-Version"));
-                        d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Query-Loaded-Nanopub-Count")));
-                        d.setLoadedNanopubChecksum(headerValue(resp, "Nanopub-Query-Loaded-Nanopub-Checksum"));
-                        d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Query-Registry-Test-Instance")));
-                        String headerStatus = headerValue(resp, "Nanopub-Query-Status");
-                        if (headerStatus == null || !headerStatus.equalsIgnoreCase("READY")) {
-                            d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
-                        } else {
-                            d.reportTestSuccess(watch.getTime());
-                        }
-                    }
-                } catch (Exception ex) {
-                    logger.error("Test failed. Exception: {}", ex.getMessage());
-                    d.reportTestFailure("INACCESSIBLE");
-                }
-            } else if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
-                logger.info("Probing nanopub-server info at {}...", d.getServiceId());
-                try {
-                    HttpGet get = new HttpGet(d.getServiceId());
-                    get.setHeader("Accept", "application/json");
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-                    HttpResponse resp = c.execute(get);
-                    watch.stop();
-                    if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
-                        d.reportTestFailure("DOWN");
-                    } else {
-                        try (Reader r = new InputStreamReader(resp.getEntity().getContent())) {
-                            JsonObject body = JsonParser.parseReader(r).getAsJsonObject();
-                            if (body.has("nextNanopubNo") && !body.get("nextNanopubNo").isJsonNull()) {
-                                d.setNanopubCount(body.get("nextNanopubNo").getAsLong());
-                            }
-                            d.setVersion(jsonString(body, "protocolVersion"));
-                        } catch (Exception ex) {
-                            logger.info("Could not parse nanopub-server JSON body: {}", ex.getMessage());
-                        }
-                        d.reportTestSuccess(watch.getTime());
-                    }
-                } catch (Exception ex) {
-                    logger.error("Test failed. Exception: {}", ex.getMessage());
-                    d.reportTestFailure("INACCESSIBLE");
-                }
-            } else if (d.hasServiceTypePrefix(NanopubService.NANODASH_TYPE_IRI)) {
-                logger.info("Probing Nanodash status at {}...", d.getServiceId());
-                try {
-                    HttpGet get = new HttpGet(d.getServiceId());
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-                    HttpResponse resp = c.execute(get);
-                    watch.stop();
-                    if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
-                        d.reportTestFailure("DOWN");
-                    } else {
-                        d.setVersion(headerValue(resp, "Nanodash-Version"));
-                        d.reportTestSuccess(watch.getTime());
-                    }
-                } catch (Exception ex) {
-                    logger.error("Test failed. Exception: {}", ex.getMessage());
-                    d.reportTestFailure("INACCESSIBLE");
-                }
-            } else {
-                logger.info("Trying to access {}...", d.getServiceId());
-                try {
-                    HttpGet get = new HttpGet(d.getServiceId());
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-                    HttpResponse resp = c.execute(get);
-                    watch.stop();
-                    if (!wasSuccessful(resp)) {
-                        logger.info("Test failed. HTTP code {}", resp.getStatusLine().getStatusCode());
-                        d.reportTestFailure("DOWN");
-                    } else {
-                        d.reportTestSuccess(watch.getTime());
-                    }
-                } catch (Exception ex) {
-                    logger.error("Test failed. Exception: {}", ex.getMessage());
-                    d.reportTestFailure("INACCESSIBLE");
-                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
             }
+        } else if (d.hasServiceType(NanopubService.LDF_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_LDF_SERVICE_TYPE_IRI)) {
+            logger.info("Trying to access {}?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication...", d.getServiceId());
+            try {
+                HttpGet get = new HttpGet(d.getServiceId() + "?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication");
+                get.setHeader("Accept", "application/n-quads");
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    BufferedReader reader = null;
+                    try {
+                        reader = new BufferedReader(new InputStreamReader(resp.getEntity().getContent()));
+                        String line = null;
+                        int count = 0;
+                        while ((line = reader.readLine()) != null) {
+                            if (line.contains(" <http://www.nanopub.org/nschema#Nanopublication> ")) {
+                                count = count + 1;
+                            }
+                        }
+                        if (count >= 100) {
+                            d.reportTestSuccess(watch.getTime());
+                        } else {
+                            d.reportTestFailure("BROKEN");
+                        }
+                    } catch (Exception ex) {
+                        logger.info("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                        d.reportTestFailure("BROKEN");
+                    } finally {
+                        if (reader != null) {
+                            reader.close();
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
+            }
+        } else if (d.hasServiceType(NanopubService.SIGNED_SPARQL_SERVICE_TYPE_IRI)) {
+            String urlSuffix = "?query=select+%3Fx+where+%7B%3Fx+a+%3Fc%7D+limit+100&format=text%2Fcsv";
+            logger.info("Trying to access {}{}...", d.getServiceId(), urlSuffix);
+            try {
+                HttpGet get = new HttpGet(d.getServiceId() + urlSuffix);
+                get.setHeader("Accept", "text/csv");
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    CSVReader csvReader = null;
+                    try {
+                        csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
+                        String[] line;
+                        int count = 0;
+                        while ((csvReader.readNext()) != null) {
+                            count++;
+                        }
+                        if (count >= 100) {
+                            d.reportTestSuccess(watch.getTime());
+                        } else {
+                            d.reportTestFailure("BROKEN");
+                        }
+                    } catch (Exception ex) {
+                        logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                        d.reportTestFailure("BROKEN");
+                    } finally {
+                        if (csvReader != null) {
+                            csvReader.close();
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
+            }
+        } else if (d.hasServiceType(NanopubService.NANOPUB_MONITOR_TYPE_IRI)) {
+            logger.info("Trying to access {}.csv...", d.getServiceId());
+            try {
+                HttpGet get = new HttpGet(d.getServiceId() + ".csv");
+                get.setHeader("Accept", "text/csv");
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    d.setVersion(headerValue(resp, "Nanopub-Monitor-Version"));
+                    CSVReader csvReader = null;
+                    try {
+                        csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
+                        String[] line = null;
+                        int n = 0;
+                        while ((line = csvReader.readNext()) != null) {
+                            n++;
+                            if (n == 1) {
+                                // ignore header line
+                            } else {
+                                if (line[0].startsWith("http")) {
+                                    d.reportTestSuccess(watch.getTime());
+                                } else {
+                                    d.reportTestFailure("BROKEN");
+                                }
+                                break;
+                            }
+                        }
+                    } catch (Exception ex) {
+                        logger.info("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                        d.reportTestFailure("BROKEN");
+                    } finally {
+                        if (csvReader != null) {
+                            csvReader.close();
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
+            }
+        } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) {
+            logger.info("Probing registry status at {}.json...", d.getServiceId());
+            try {
+                HttpGet get = new HttpGet(d.getServiceId() + ".json");
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    d.setVersion(headerValue(resp, "Nanopub-Registry-Version"));
+                    d.setTrustStateHash(headerValue(resp, "Nanopub-Registry-Trust-State-Hash"));
+                    d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Registry-Nanopub-Count")));
+                    d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Registry-Test-Instance")));
+                    try (Reader r = new InputStreamReader(resp.getEntity().getContent())) {
+                        JsonObject body = JsonParser.parseReader(r).getAsJsonObject();
+                        d.setCurrentSetting(jsonString(body, "currentSetting"));
+                        d.setOriginalSetting(jsonString(body, "originalSetting"));
+                    } catch (Exception ex) {
+                        logger.info("Could not parse registry JSON body for server '{}': {}", d.getServiceId(), ex.getMessage());
+                    }
+                    String headerStatus = headerValue(resp, "Nanopub-Registry-Status");
+                    if (!NanopubServerUtils.isReadyRegistryStatus(headerStatus)) {
+                        d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
+                    } else {
+                        d.reportTestSuccess(watch.getTime());
+                    }
+                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
+            }
+        } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_QUERY_TYPE_IRI)) {
+            logger.info("Probing query status at {}...", d.getServiceId());
+            try {
+                HttpGet get = new HttpGet(d.getServiceId());
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    d.setVersion(headerValue(resp, "Nanopub-Query-Version"));
+                    d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Query-Loaded-Nanopub-Count")));
+                    d.setLoadedNanopubChecksum(headerValue(resp, "Nanopub-Query-Loaded-Nanopub-Checksum"));
+                    d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Query-Registry-Test-Instance")));
+                    String headerStatus = headerValue(resp, "Nanopub-Query-Status");
+                    if (headerStatus == null || !headerStatus.equalsIgnoreCase("READY")) {
+                        d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
+                    } else {
+                        d.reportTestSuccess(watch.getTime());
+                    }
+                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
+            }
+        } else if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
+            logger.info("Probing nanopub-server info at {}...", d.getServiceId());
+            try {
+                HttpGet get = new HttpGet(d.getServiceId());
+                get.setHeader("Accept", "application/json");
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    try (Reader r = new InputStreamReader(resp.getEntity().getContent())) {
+                        JsonObject body = JsonParser.parseReader(r).getAsJsonObject();
+                        if (body.has("nextNanopubNo") && !body.get("nextNanopubNo").isJsonNull()) {
+                            d.setNanopubCount(body.get("nextNanopubNo").getAsLong());
+                        }
+                        d.setVersion(jsonString(body, "protocolVersion"));
+                    } catch (Exception ex) {
+                        logger.info("Could not parse nanopub-server JSON body for server '{}': {}", d.getServiceId(), ex.getMessage());
+                    }
+                    d.reportTestSuccess(watch.getTime());
+                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
+            }
+        } else if (d.hasServiceTypePrefix(NanopubService.NANODASH_TYPE_IRI)) {
+            logger.info("Probing Nanodash status at {}...", d.getServiceId());
+            try {
+                HttpGet get = new HttpGet(d.getServiceId());
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    d.setVersion(headerValue(resp, "Nanodash-Version"));
+                    d.reportTestSuccess(watch.getTime());
+                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
+            }
+        } else {
+            logger.info("Trying to access {}...", d.getServiceId());
+            try {
+                HttpGet get = new HttpGet(d.getServiceId());
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    d.reportTestSuccess(watch.getTime());
+                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
+            }
+        }
     }
 
     private boolean wasSuccessful(HttpResponse resp) {
@@ -456,7 +468,9 @@ public class ServerScanner implements ICode {
     }
 
     private static Long parseLongOrNull(String s) {
-        if (s == null) return null;
+        if (s == null) {
+            return null;
+        }
         try {
             return Long.parseLong(s.trim());
         } catch (NumberFormatException ex) {
@@ -465,7 +479,9 @@ public class ServerScanner implements ICode {
     }
 
     private static String jsonString(JsonObject obj, String key) {
-        if (!obj.has(key)) return null;
+        if (!obj.has(key)) {
+            return null;
+        }
         JsonElement el = obj.get(key);
         return el.isJsonNull() ? null : el.getAsString();
     }

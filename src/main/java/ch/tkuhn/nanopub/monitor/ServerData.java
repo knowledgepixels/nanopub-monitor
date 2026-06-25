@@ -24,7 +24,7 @@ public class ServerData implements Serializable {
 
     private static final long serialVersionUID = 1383338443824756632L;
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final Logger logger = LoggerFactory.getLogger(ServerData.class);
 
     private NanopubService service;
     private Object info;
@@ -51,7 +51,9 @@ public class ServerData implements Serializable {
      * @param service the nanopublication service
      * @param info    optional additional server info (may be null)
      */
-    /** Query ip-api.com for a given host at most once per this interval (10 minutes). */
+    /**
+     * Query ip-api.com for a given host at most once per this interval (10 minutes).
+     */
     private static final long IP_INFO_TTL_MS = 10 * 60 * 1000;
 
     public ServerData(NanopubService service, Object info) {
@@ -142,7 +144,7 @@ public class ServerData implements Serializable {
         try {
             ipInfo = fetchIpInfo(new URI(service.getServiceIri().stringValue()).getHost());
         } catch (Exception ex) {
-            logger.error(ex.getMessage(), ex);
+            logger.error("Could not load IP info for server '{}'", getServiceId(), ex);
             if (ipInfo == null) {
                 ipInfo = ServerIpInfo.empty;
             }
@@ -197,7 +199,9 @@ public class ServerData implements Serializable {
      * @return the average response time in milliseconds, or null
      */
     public Integer getAvgResponseTimeInMs() {
-        if (countSuccess == 0) return null;
+        if (countSuccess == 0) {
+            return null;
+        }
         return (int) (totalResponseTime / (float) countSuccess);
     }
 
@@ -305,7 +309,9 @@ public class ServerData implements Serializable {
      * @return the first 12 characters, the whole value if shorter, or ""
      */
     private static String shortHash(String hash) {
-        if (hash == null) return "";
+        if (hash == null) {
+            return "";
+        }
         return hash.length() < 12 ? hash : hash.substring(0, 12);
     }
 
@@ -353,7 +359,9 @@ public class ServerData implements Serializable {
      * @return the short prefix, or ""
      */
     public static String shortSetting(String setting) {
-        if (setting == null) return "";
+        if (setting == null) {
+            return "";
+        }
         return setting.length() > 10 ? setting.substring(0, 10) : setting;
     }
 
@@ -381,7 +389,9 @@ public class ServerData implements Serializable {
      * @return the formatted count, or ""
      */
     public String getNanopubCountString() {
-        if (nanopubCount == null) return "";
+        if (nanopubCount == null) {
+            return "";
+        }
         return String.format("%,d", nanopubCount);
     }
 
@@ -445,11 +455,15 @@ public class ServerData implements Serializable {
      */
     public Integer getDistanceInKm() {
         ServerIpInfo monitorIpInfo = ServerList.get().getMonitorIpInfo();
-        if (monitorIpInfo == null) return null;
+        if (monitorIpInfo == null) {
+            return null;
+        }
         ServerIpInfo serverIpInfo = getIpInfo();
         Double sLat = serverIpInfo.getLatitude();
         Double sLng = serverIpInfo.getLongitude();
-        if (sLat == null || sLng == null) return null;
+        if (sLat == null || sLng == null) {
+            return null;
+        }
         return (int) calculateDistance(sLat, sLng, monitorIpInfo.getLatitude(), monitorIpInfo.getLongitude());
     }
 
@@ -471,10 +485,13 @@ public class ServerData implements Serializable {
      * @throws URISyntaxException if the constructed URI is invalid
      */
     public static ServerIpInfo fetchIpInfo(String host) throws IOException, URISyntaxException {
-        if (!MonitorConf.get().isGeoIpInfoEnabled()) return ServerIpInfo.empty;
+        if (!MonitorConf.get().isGeoIpInfoEnabled()) {
+            return ServerIpInfo.empty;
+        }
         Long fetchedAt = ipInfoFetchedAt.get(host);
         if (fetchedAt != null && System.currentTimeMillis() - fetchedAt < IP_INFO_TTL_MS) {
             ServerIpInfo cached = ipInfoMap.get(host);
+            logger.debug("Using cached IP info for host '{}' (last fetched {} ms ago)", host, System.currentTimeMillis() - fetchedAt);
             return cached == null ? ServerIpInfo.empty : cached;
         }
         ipInfoFetchedAt.put(host, System.currentTimeMillis());
@@ -487,8 +504,11 @@ public class ServerData implements Serializable {
             con.setReadTimeout(10000);
             serverIpInfo = new Gson().fromJson(new InputStreamReader(con.getInputStream()), ServerIpInfo.class);
             ipInfoMap.put(host, serverIpInfo);
+            logger.debug("Fetched fresh IP info for host '{}'", host);
         } finally {
-            if (con != null) con.disconnect();
+            if (con != null) {
+                con.disconnect();
+            }
         }
         return serverIpInfo;
     }

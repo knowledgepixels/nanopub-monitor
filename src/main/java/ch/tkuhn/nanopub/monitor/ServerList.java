@@ -36,7 +36,7 @@ public class ServerList implements Serializable {
         return serverList;
     }
 
-    private static Map<NanopubService, ServerData> servers = new HashMap<NanopubService, ServerData>();
+    private static final Map<NanopubService, ServerData> servers = new HashMap<NanopubService, ServerData>();
 
     private ServerList() {
         refresh();
@@ -204,16 +204,20 @@ public class ServerList implements Serializable {
     private static final ValueFactory vf = SimpleValueFactory.getInstance();
 
     private void refreshFromApi() {
+        String queryId = "RAorkjih6fAwpfjDtvCaIyIkqGNHqBOqukILXGbWfhMpI/get-services";
         try {
-            ApiResponse resp = QueryAccess.get(new QueryRef("RAorkjih6fAwpfjDtvCaIyIkqGNHqBOqukILXGbWfhMpI/get-services"));
+            ApiResponse resp = QueryAccess.get(new QueryRef(queryId));
+            int newCount = 0;
             for (ApiResponseEntry e : resp.getData()) {
                 NanopubService ns = new NanopubService(vf.createIRI(e.get("service")), vf.createIRI(e.get("serviceType")));
                 if (!servers.containsKey(ns)) {
                     servers.put(ns, new ServerData(ns, null));
+                    newCount++;
                 }
             }
+            logger.debug("Server list refreshed from '{}': {} new servers found, {} total", queryId, newCount, servers.size());
         } catch (Exception ex) {
-            logger.error("Could not refresh server list from API", ex);
+            logger.error("Could not refresh server list from API query '{}'", queryId, ex);
         }
     }
 
