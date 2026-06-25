@@ -53,12 +53,8 @@ jobs:
           npm ci
           npx semantic-release
 
-      - name: Update master branch after release
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch --unshallow origin || true
-          git fetch origin master
-          git checkout -B master FETCH_HEAD
-          git merge release --no-edit
-          git push origin master
+      - name: Sync release artifacts
+        uses: knowledgepixels/sync-release-artifacts-action@3926beed487a1c183af52423344bf6ee36fd7b27 # v1.0.0
+        with:
+          main-branch: master
+          release-branch: release
