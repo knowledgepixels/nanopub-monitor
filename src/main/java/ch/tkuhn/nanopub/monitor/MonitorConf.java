@@ -12,8 +12,8 @@ import java.util.Properties;
  */
 public class MonitorConf {
 
-    private static final MonitorConf obj = new MonitorConf();
     private static final Logger logger = LoggerFactory.getLogger(MonitorConf.class);
+    private static final MonitorConf obj = new MonitorConf();
 
     /**
      * Get the singleton instance of the configuration.
@@ -33,14 +33,14 @@ public class MonitorConf {
         InputStream in = MonitorConf.class.getResourceAsStream(mainConfFile);
         if (in == null) {
             logger.error("Configuration file '{}' not found on classpath", mainConfFile);
-            System.exit(1);
+            throw new IllegalStateException("Configuration file '" + mainConfFile + "' not found on classpath");
         }
         try {
             conf.load(in);
             logger.info("Loaded configuration from '{}'", mainConfFile);
         } catch (IOException ex) {
             logger.error("Could not load configuration file '{}'", mainConfFile, ex);
-            System.exit(1);
+            throw new IllegalStateException("Could not load configuration file '" + mainConfFile + "'", ex);
         }
 
         String localConfFile = "local.conf.properties";
@@ -51,7 +51,7 @@ public class MonitorConf {
                 logger.info("Loaded local configuration overrides from '{}'", localConfFile);
             } catch (IOException ex) {
                 logger.error("Could not load local configuration file '{}'", localConfFile, ex);
-                System.exit(1);
+                throw new IllegalStateException("Could not load local configuration file '" + localConfFile + "'", ex);
             }
         } else {
             logger.debug("No local configuration file '{}' found, using defaults only", localConfFile);
