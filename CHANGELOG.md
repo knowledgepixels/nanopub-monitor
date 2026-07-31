@@ -1,3 +1,47 @@
+## [1.6.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.5.0...nanopub-monitor-1.6.0) (2026-07-31)
+
+### Features
+
+* **monitor:** flag query instances that fall behind their own registry ([143d105](https://github.com/knowledgepixels/nanopub-monitor/commit/143d10591866230449854700b9f8e4953bd2e739))
+
+### Dependency updates
+
+* **core-deps:** update dependency org.junit:junit-bom to v6.1.1 ([f021786](https://github.com/knowledgepixels/nanopub-monitor/commit/f02178634105c96e1c44e6b5c9e8d2a4b8f5e125))
+* **core-deps:** update dependency org.junit:junit-bom to v6.1.2 ([058dd20](https://github.com/knowledgepixels/nanopub-monitor/commit/058dd208890b9979f0130a6cf2b72d5d04f67d03))
+* **core-deps:** update dependency org.nanopub:nanopub to v1.91.0 ([8243d2a](https://github.com/knowledgepixels/nanopub-monitor/commit/8243d2a2c787c23997fc31183558d0063dedc056))
+* **core-deps:** update wicket.version to v10.10.0 ([a18fd49](https://github.com/knowledgepixels/nanopub-monitor/commit/a18fd4994be2568078dc314eeb970a55c017f19c))
+* **deps:** update tomcat docker tag to v11.0.23 ([ae3d787](https://github.com/knowledgepixels/nanopub-monitor/commit/ae3d7876d0305033983fbb483eda73dc7f4470c8))
+* **deps:** update tomcat docker tag to v11.0.24 ([038d44a](https://github.com/knowledgepixels/nanopub-monitor/commit/038d44a6967facbd9f21707fa549acd2b46beb70))
+
+### Bug Fixes
+
+* initialize logger before eager singletons in static init ([b186232](https://github.com/knowledgepixels/nanopub-monitor/commit/b186232ad412b853f933d754f3f479fd0837278c))
+
+### Documentation
+
+* **ServerData:** update broken javadoc annotation ([e3e1792](https://github.com/knowledgepixels/nanopub-monitor/commit/e3e1792c776deef162aab7325b8c2e581ea7e11a))
+
+### Build and continuous integration
+
+* **deps:** lock file maintenance ([b52f4af](https://github.com/knowledgepixels/nanopub-monitor/commit/b52f4afbae28e1844a1002fc99f91570d7b62c9b))
+* **deps:** lock file maintenance ([2f7890e](https://github.com/knowledgepixels/nanopub-monitor/commit/2f7890e69d53ceeeacfb25bce9bd943ae9ea3f7a))
+* **deps:** lock file maintenance ([e1c3e20](https://github.com/knowledgepixels/nanopub-monitor/commit/e1c3e20c5f405676d014ea6553e937dd7f799835))
+* **deps:** update actions/checkout action to v7.0.1 ([92bb090](https://github.com/knowledgepixels/nanopub-monitor/commit/92bb0904819092cf7f0af0ed930a17c4c10da5e3))
+* **deps:** update actions/setup-java action to v5.4.0 ([13b3c53](https://github.com/knowledgepixels/nanopub-monitor/commit/13b3c53cc2dc0f2042447a6026cb7e6bfbd42495))
+* **deps:** update actions/setup-java action to v5.5.0 ([d936240](https://github.com/knowledgepixels/nanopub-monitor/commit/d93624044ad373e85911548e29d3e419c363cf6e))
+* **deps:** update actions/setup-java action to v5.6.0 ([91c8840](https://github.com/knowledgepixels/nanopub-monitor/commit/91c884097f311259288f5a586f6063e278d47a7a))
+* **deps:** update actions/setup-node action to v7 ([6521e0e](https://github.com/knowledgepixels/nanopub-monitor/commit/6521e0e9b5e067dab2d39c34b2a6776660c03c38))
+* **deps:** update coverallsapp/github-action action to v2.3.8 ([118844f](https://github.com/knowledgepixels/nanopub-monitor/commit/118844f4e7267524066d647fb14afc916b745edf))
+* **deps:** update dependency com.google.cloud.tools:jib-maven-plugin to v3.5.2 ([5af8b08](https://github.com/knowledgepixels/nanopub-monitor/commit/5af8b08b26390578e5d4f022b46f9a76c6dbb6eb))
+* **deps:** update dependency node to v24.18.0 ([aef4101](https://github.com/knowledgepixels/nanopub-monitor/commit/aef4101e82881e929c39c6679d1d208605e73e7b))
+* **deps:** update dependency node to v24.18.1 ([e162e8a](https://github.com/knowledgepixels/nanopub-monitor/commit/e162e8a67958f4e898fe11e39d9906e90e362d20))
+* **release:** replace branch update script with knowledgepixels/sync-release-artifacts-action ([d226e4c](https://github.com/knowledgepixels/nanopub-monitor/commit/d226e4cba68e26c102bc6f0466f4a5313d0d6742))
+
+### General maintenance
+
+* **logging:** add/enhance logging messages ([95d82c8](https://github.com/knowledgepixels/nanopub-monitor/commit/95d82c871765f2d43b47c0f8421f8f08cca80019))
+* setting next snapshot version [skip ci] ([a44c4f8](https://github.com/knowledgepixels/nanopub-monitor/commit/a44c4f8e28bbb13cc9556ebaa3f414c14f533a78))
+
 ## [1.5.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.4.0...nanopub-monitor-1.5.0) (2026-06-22)
 
 ### Features
