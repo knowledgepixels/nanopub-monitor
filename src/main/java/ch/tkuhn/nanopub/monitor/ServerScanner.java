@@ -365,12 +365,26 @@ public class ServerScanner implements ICode {
                         d.setVersion(headerValue(resp, "Nanopub-Query-Version"));
                         d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Query-Loaded-Nanopub-Count")));
                         d.setLoadedNanopubChecksum(headerValue(resp, "Nanopub-Query-Loaded-Nanopub-Checksum"));
+                        // Both counts come from the same response, so one request tells us how far
+                        // this instance trails its own registry — no cross-instance comparison, and
+                        // so still meaningful when every instance is equally behind. The loader-age
+                        // header is absent on instances predating it; the column stays empty there.
+                        d.updateSyncHealth(
+                                parseLongOrNull(headerValue(resp, "Nanopub-Query-Registry-Nanopub-Count")),
+                                parseLongOrNull(headerValue(resp, "Nanopub-Query-Loader-Last-Success-Age-Seconds")));
                         d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Query-Registry-Test-Instance")));
                         String headerStatus = headerValue(resp, "Nanopub-Query-Status");
                         if (headerStatus == null || !headerStatus.equalsIgnoreCase("READY")) {
                             d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
                         } else {
                             d.reportTestSuccess(watch.getTime());
+                            // A stalled instance still reports READY and still answers quickly —
+                            // that is exactly why the 2026-07-31 stall went unnoticed for hours.
+                            // Overrides the status only after the success is recorded, so the OK
+                            // ratio keeps measuring availability.
+                            if (d.isSyncStalled()) {
+                                d.reportStalled();
+                            }
                         }
                     }
                 } catch (Exception ex) {
