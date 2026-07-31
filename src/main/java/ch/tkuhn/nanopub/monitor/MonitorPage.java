@@ -122,6 +122,21 @@ public class MonitorPage extends WebPage {
                 }
                 item.add(trustHashLabel);
                 item.add(new Label("nanopubcount", d.getNanopubCountString()));
+                // Any non-zero lag is worth showing in red: unlike the checksum outlier,
+                // this is measured against the instance's own registry, so it means the
+                // instance is genuinely missing nanopubs rather than merely disagreeing
+                // with its peers.
+                Label syncLagLabel = new Label("synclag", d.getSyncLagString());
+                if (d.isBehind()) {
+                    syncLagLabel.add(new AttributeModifier("style", "color: red"));
+                }
+                item.add(syncLagLabel);
+                Label loaderAgeLabel = new Label("loaderage", d.getLoaderAgeString());
+                Long loaderAge = d.getLoaderLastSuccessAgeSeconds();
+                if (loaderAge != null && loaderAge > SyncHealth.LOADER_STALL_SECONDS) {
+                    loaderAgeLabel.add(new AttributeModifier("style", "color: red"));
+                }
+                item.add(loaderAgeLabel);
                 item.add(new Label("successratio", d.getSuccessRatioString()));
                 item.add(new Label("resptime", d.getAvgResponseTimeString() + " (" + d.getDistanceString() + ")"));
                 item.add(new Label("lastseen", formatDate(d.getLastSeenDate())));

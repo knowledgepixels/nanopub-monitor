@@ -42,7 +42,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
         logger.debug("Generating CSV export of current server data");
         StringWriter sw = new StringWriter();
         CSVWriter w = new CSVWriter(sw);
-        w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
+        w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count", "Registry Nanopub Count", "Sync Lag", "Loader Age (s)", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
         ServerList sl = ServerList.get();
         int rowCount = 0;
         for (ServerData sd : sl.getSortedServerData()) {
@@ -54,6 +54,9 @@ public class CsvTable implements SerializableSupplier<IResource> {
             String group = sl.getHashGroupLabel(sd);
             String checksum = sd.getLoadedNanopubChecksum();
             Long npc = sd.getNanopubCount();
+            Long rnpc = sd.getRegistryNanopubCount();
+            Long lag = sd.getSyncLag();
+            Long loaderAge = sd.getLoaderLastSuccessAgeSeconds();
             w.writeNext(new String[]{
                     sd.getServiceId(),
                     sd.getService().getTypeIri().stringValue(),
@@ -66,6 +69,9 @@ public class CsvTable implements SerializableSupplier<IResource> {
                     (group == null ? "" : group),
                     (checksum == null ? "" : checksum),
                     (npc == null ? "" : npc.toString()),
+                    (rnpc == null ? "" : rnpc.toString()),
+                    (lag == null ? "" : lag.toString()),
+                    (loaderAge == null ? "" : loaderAge.toString()),
                     (sr == null ? "" : sr + ""),
                     (rt == null ? "" : rt + ""),
                     (dist == null ? "" : dist + ""),

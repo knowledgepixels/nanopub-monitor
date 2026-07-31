@@ -39,6 +39,9 @@ public class ServerData implements Serializable {
     private String currentSetting;
     private String originalSetting;
     private Long nanopubCount;
+    private Long registryNanopubCount;
+    private Long loaderLastSuccessAgeSeconds;
+    private Long behindSinceMs;
     private boolean testInstance;
     private String version;
 
@@ -393,6 +396,110 @@ public class ServerData implements Serializable {
             return "";
         }
         return String.format("%,d", nanopubCount);
+    }
+
+    /**
+     * Record the sync-health headers from a nanopub-query scan.
+     *
+     * <p>Also maintains the "behind since" mark that {@link #isSyncStalled()} reads, so a
+     * momentary lag between an instance's registry poll and its batch landing is not
+     * reported as a stall. The mark clears as soon as the instance is level again.
+     *
+     * @param registryCount    nanopubs the instance's own registry reports holding, or null
+     * @param loaderAgeSeconds seconds since the instance's loader last completed a tick, or
+     *                         null when the instance does not report it
+     */
+    public void updateSyncHealth(Long registryCount, Long loaderAgeSeconds) {
+        this.registryNanopubCount = registryCount;
+        this.loaderLastSuccessAgeSeconds = loaderAgeSeconds;
+        Long lag = getSyncLag();
+        if (lag == null || lag == 0L) {
+            behindSinceMs = null;
+        } else if (behindSinceMs == null) {
+            behindSinceMs = System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * Get the nanopub count reported by this instance's own registry, or null if unknown
+     * (non-query types, or not yet scanned). Reported via the
+     * {@code Nanopub-Query-Registry-Nanopub-Count} header.
+     *
+     * @return the registry's nanopub count, or null
+     */
+    public Long getRegistryNanopubCount() {
+        return registryNanopubCount;
+    }
+
+    /**
+     * Get the seconds since this instance's loader last completed a tick, or null if
+     * unknown. Reported via the {@code Nanopub-Query-Loader-Last-Success-Age-Seconds}
+     * header; instances predating that header simply leave this empty.
+     *
+     * @return the loader age in seconds, or null
+     */
+    public Long getLoaderLastSuccessAgeSeconds() {
+        return loaderLastSuccessAgeSeconds;
+    }
+
+    /**
+     * How far this instance trails its own registry, or null if either count is unknown.
+     *
+     * @return the lag in nanopubs, or null
+     */
+    public Long getSyncLag() {
+        return SyncHealth.lag(registryNanopubCount, nanopubCount);
+    }
+
+    /**
+     * Get the sync lag as a display string, or "" if unknown.
+     *
+     * @return "in sync", "N behind", or ""
+     */
+    public String getSyncLagString() {
+        return SyncHealth.formatLag(getSyncLag());
+    }
+
+    /**
+     * Get the loader age as a display string, or "" if unknown.
+     *
+     * @return e.g. "2s ago", "2h 04m ago", or ""
+     */
+    public String getLoaderAgeString() {
+        return SyncHealth.formatAge(loaderLastSuccessAgeSeconds);
+    }
+
+    /**
+     * Whether this instance is behind its registry at all, however briefly.
+     *
+     * @return true if the lag is known and non-zero
+     */
+    public boolean isBehind() {
+        Long lag = getSyncLag();
+        return lag != null && lag > 0L;
+    }
+
+    /**
+     * Whether this instance is reachable but has stopped keeping up with its registry.
+     *
+     * @return true if it has been out of sync long enough to report
+     */
+    public boolean isSyncStalled() {
+        return SyncHealth.isStalled(behindSinceMs, System.currentTimeMillis(), loaderLastSuccessAgeSeconds);
+    }
+
+    /**
+     * Report that this instance answers requests but is no longer ingesting.
+     *
+     * <p>Deliberately does not touch the success/failure counters: the instance really is
+     * up, and during the 2026-07-31 stall it served queries in ~0.1 s throughout. Folding
+     * this into the failure count would corrupt the OK ratio, which measures availability.
+     * Call after {@link #reportTestSuccess(long)}, which resets the status to OK.
+     */
+    public void reportStalled() {
+        status = "STALLED";
+        logger.info("Test result: {} STALLED (lag {}, loader {})",
+                service.getServiceIri(), getSyncLagString(), getLoaderAgeString());
     }
 
     /**
