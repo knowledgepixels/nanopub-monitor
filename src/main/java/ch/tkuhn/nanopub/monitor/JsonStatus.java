@@ -22,9 +22,9 @@ public class JsonStatus implements SerializableSupplier<IResource> {
 
     private static final long serialVersionUID = 1L;
 
-    private static final JsonStatus instance = new JsonStatus();
-    private static final Gson gson = new GsonBuilder().serializeNulls().create();
     private static final Logger logger = LoggerFactory.getLogger(JsonStatus.class);
+    private static final Gson gson = new GsonBuilder().serializeNulls().create();
+    private static final JsonStatus instance = new JsonStatus();
 
     public static JsonStatus instance() {
         return instance;

@@ -17,8 +17,8 @@ public class CsvTable implements SerializableSupplier<IResource> {
 
     private static final long serialVersionUID = 7196507056520414804L;
 
-    private static final CsvTable instance = new CsvTable();
     private static final Logger logger = LoggerFactory.getLogger(CsvTable.class);
+    private static final CsvTable instance = new CsvTable();
 
     /**
      * Get the singleton instance of CsvTable.
