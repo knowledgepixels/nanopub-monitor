@@ -142,9 +142,11 @@ public class MonitorPage extends WebPage {
                 item.add(new Label("lastseen", formatDate(d.getLastSeenDate())));
                 if (i == null) {
                     item.add(new Label("ip", "unknown"));
+                    item.add(new Label("region", "unknown"));
                     item.add(new Label("location", "unknown"));
                 } else {
                     item.add(new Label("ip", i.getIp()));
+                    item.add(new Label("region", i.getRegionName()));
                     item.add(new Label("location", i.getCity() + ", " + i.getCountryName()));
                 }
             }
