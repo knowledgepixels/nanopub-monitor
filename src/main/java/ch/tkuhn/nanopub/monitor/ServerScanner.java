@@ -11,6 +11,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.apache.wicket.util.thread.ICode;
 import org.apache.wicket.util.thread.Task;
 import org.nanopub.extra.server.NanopubServerUtils;
@@ -71,16 +72,69 @@ public class ServerScanner implements ICode {
         logger.info("Starting nanopub server scan cycle");
         ServerList.get().refresh();
         stillAlive();
+        HttpClient c = newHttpClient();
+        discoverTestInstances(c);
+        stillAlive();
         logger.debug("Server list refreshed: {} servers known, beginning tests", ServerList.get().getServerCount());
-        testServers();
+        testServers(c);
     }
 
-    private void testServers() {
+    private static HttpClient newHttpClient() {
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(10 * 1000)
                 .setSocketTimeout(15 * 1000)
                 .build();
-        HttpClient c = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+        return HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+    }
+
+    /**
+     * Look for test instances of the registries the network announces, and add the ones that
+     * answer. Test deployments are not announced in service intro nanopublications, so they
+     * cannot be queried for; the list proposes where to look and the registries themselves
+     * confirm what is found.
+     */
+    private void discoverTestInstances(HttpClient c) {
+        int found = ServerList.get().addTestInstances(url -> isTestInstance(c, url));
+        if (found > 0) {
+            logger.info("Discovered {} registry test instance(s) mirroring announced registries", found);
+        }
+    }
+
+    /**
+     * Probe a candidate URL for a registry that reports itself as a test instance. Anything
+     * else — nothing listening, an error status, or a registry that does not claim to be a
+     * test instance — is not one.
+     */
+    private boolean isTestInstance(HttpClient c, String serviceUrl) {
+        logger.debug("Probing {}.json for a registry test instance...", serviceUrl);
+        try {
+            HttpResponse resp = c.execute(new HttpGet(serviceUrl + ".json"));
+            try {
+                return saysTestInstance(resp);
+            } finally {
+                EntityUtils.consumeQuietly(resp.getEntity());
+            }
+        } catch (Exception ex) {
+            logger.debug("No registry test instance at '{}': {}", serviceUrl, ex.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Whether a response comes from a registry calling itself a test instance.
+     *
+     * @param resp the response to a registry status request
+     * @return true if the request succeeded and the test-instance header says so
+     */
+    static boolean saysTestInstance(HttpResponse resp) {
+        int code = resp.getStatusLine().getStatusCode();
+        if (code < 200 || code >= 300) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(headerValue(resp, "Nanopub-Registry-Test-Instance"));
+    }
+
+    private void testServers(HttpClient c) {
         int threads = Math.max(1, MonitorConf.get().getScanThreads());
         ExecutorService pool = Executors.newFixedThreadPool(threads, r -> {
             Thread t = new Thread(r, "server-scanner-worker");

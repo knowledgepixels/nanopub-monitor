@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -92,7 +94,7 @@ public class ServerList implements Serializable {
      * across different settings is not meaningful, so the calculation is scoped per setting.
      *
      * @param setting the registry setting (trusty URI); if null, the result is null
-     * @return the majority trust state hash for the cohort, or null if none
+     * @return the majority trust state hash for the cohort, or null if the cohort has none
      */
     public String getMajorityTrustStateHashForSetting(String setting) {
         if (setting == null) return null;
@@ -116,7 +118,7 @@ public class ServerList implements Serializable {
      * boundary is not meaningful.
      *
      * @param testInstance whether to consider the test cohort (true) or the non-test cohort (false)
-     * @return the majority loaded-nanopub checksum for the cohort, or null if none
+     * @return the majority loaded-nanopub checksum for the cohort, or null if the cohort has none
      */
     public String getMajorityLoadedNanopubChecksum(boolean testInstance) {
         Map<String, Integer> counts = new HashMap<>();
@@ -131,18 +133,25 @@ public class ServerList implements Serializable {
     }
 
     /**
-     * Return the key with the strictly highest count in the given map, or null if the map is empty.
+     * Return the key with the strictly highest count in the given map, or null if the map is
+     * empty or its highest count is shared. A cohort that splits evenly has no majority to
+     * measure its members against, and picking one of the tied values would label the others
+     * outliers on nothing more than map iteration order.
      */
-    private static String majorityKey(Map<String, Integer> counts) {
+    static String majorityKey(Map<String, Integer> counts) {
         String majority = null;
         int best = 0;
+        boolean tied = false;
         for (Map.Entry<String, Integer> e : counts.entrySet()) {
             if (e.getValue() > best) {
                 best = e.getValue();
                 majority = e.getKey();
+                tied = false;
+            } else if (e.getValue() == best) {
+                tied = true;
             }
         }
-        return majority;
+        return tied ? null : majority;
     }
 
     /**
@@ -201,7 +210,129 @@ public class ServerList implements Serializable {
         refreshFromApi();
     }
 
+    /**
+     * Asks whether a nanopub-registry is running at a candidate URL and says it is a test
+     * instance. Implemented by the scanner, which owns the HTTP client.
+     */
+    @FunctionalInterface
+    interface RegistryProbe {
+
+        /**
+         * @param serviceUrl the candidate registry URL
+         * @return true if a registry answers there and reports itself as a test instance
+         */
+        boolean isTestInstance(String serviceUrl);
+    }
+
+    /**
+     * How long to leave a candidate alone after a probe found nothing there. A discovered test
+     * instance joins the server list for good, so this only paces the misses: most registries
+     * have no test counterpart, and their candidate URL would otherwise be probed every scan.
+     */
+    private static final long TEST_INSTANCE_PROBE_INTERVAL_MS = 10 * 60 * 1000;
+
+    private static final Map<String, Long> testInstanceProbedAt = new HashMap<>();
+
+    /**
+     * Add the test instances of the registries the network announces. A test deployment is
+     * deliberately not announced in a service intro nanopublication — it would then be
+     * indistinguishable from a production service to everything reading that list — so it
+     * cannot be found by the query above. It is reachable by convention, at the announced
+     * registry's URL with "test." in front of the host, and the probe keeps only those
+     * candidates where a registry answers and reports itself as a test instance. The
+     * convention only proposes where to look; the registry itself decides what is added.
+     *
+     * @param probe the probe to confirm a candidate with
+     * @return the number of test instances newly added to the list
+     */
+    int addTestInstances(RegistryProbe probe) {
+        int newCount = 0;
+        for (NanopubService candidate : testInstanceCandidates(servers.keySet())) {
+            String url = candidate.getServiceIri().stringValue();
+            Long probedAt = testInstanceProbedAt.get(url);
+            if (probedAt != null && System.currentTimeMillis() - probedAt < TEST_INSTANCE_PROBE_INTERVAL_MS) {
+                continue;
+            }
+            testInstanceProbedAt.put(url, System.currentTimeMillis());
+            if (!probe.isTestInstance(url)) {
+                continue;
+            }
+            if (addIfNew(candidate)) {
+                newCount++;
+                logger.info("Monitoring test instance {}, found from the announced registry it mirrors", url);
+            }
+        }
+        return newCount;
+    }
+
+    /**
+     * The test-instance URLs worth probing, given the services already known: one per announced
+     * registry, minus the ones already in the list and minus the registries that are themselves
+     * test instances. Each candidate keeps the service type of the registry it was derived from.
+     *
+     * @param known the services already in the list
+     * @return the candidates to probe, without duplicates
+     */
+    static List<NanopubService> testInstanceCandidates(Collection<NanopubService> known) {
+        Set<String> knownUrls = new HashSet<>();
+        for (NanopubService ns : known) {
+            knownUrls.add(ns.getServiceIri().stringValue());
+        }
+        List<NanopubService> candidates = new ArrayList<>();
+        Set<String> proposed = new HashSet<>();
+        for (NanopubService ns : known) {
+            if (!ns.getTypeIri().stringValue().startsWith(NanopubService.NANOPUB_REGISTRY_TYPE_IRI.stringValue())) {
+                continue;
+            }
+            String url = testInstanceUrl(ns.getServiceIri().stringValue());
+            // Candidates are deduplicated by URL rather than by service: registries announced
+            // under two versions of the type IRI share one host, and so one test instance.
+            if (url == null || knownUrls.contains(url) || !proposed.add(url)) {
+                continue;
+            }
+            candidates.add(new NanopubService(vf.createIRI(url), ns.getTypeIri()));
+        }
+        return candidates;
+    }
+
+    /**
+     * Where a service's test counterpart is deployed by convention: the same URL with "test." in
+     * front of the host.
+     *
+     * @param serviceUrl the announced service URL
+     * @return the candidate URL, or null if the service is already a test instance or its URL
+     * names no host to prefix
+     */
+    static String testInstanceUrl(String serviceUrl) {
+        try {
+            URI uri = new URI(serviceUrl);
+            String host = uri.getHost();
+            if (host == null || host.startsWith("test.")) {
+                return null;
+            }
+            return new URI(uri.getScheme(), uri.getUserInfo(), "test." + host, uri.getPort(),
+                    uri.getPath(), uri.getQuery(), uri.getFragment()).toString();
+        } catch (URISyntaxException ex) {
+            logger.warn("Could not derive a test-instance URL from '{}'", serviceUrl, ex);
+            return null;
+        }
+    }
+
     private static final ValueFactory vf = SimpleValueFactory.getInstance();
+
+    /**
+     * Start tracking the given service unless it is already known.
+     *
+     * @param ns the service
+     * @return true if it was added, false if it was already in the list
+     */
+    private static boolean addIfNew(NanopubService ns) {
+        if (servers.containsKey(ns)) {
+            return false;
+        }
+        servers.put(ns, new ServerData(ns, null));
+        return true;
+    }
 
     private void refreshFromApi() {
         String queryId = "RAorkjih6fAwpfjDtvCaIyIkqGNHqBOqukILXGbWfhMpI/get-services";
@@ -210,8 +341,7 @@ public class ServerList implements Serializable {
             int newCount = 0;
             for (ApiResponseEntry e : resp.getData()) {
                 NanopubService ns = new NanopubService(vf.createIRI(e.get("service")), vf.createIRI(e.get("serviceType")));
-                if (!servers.containsKey(ns)) {
-                    servers.put(ns, new ServerData(ns, null));
+                if (addIfNew(ns)) {
                     newCount++;
                 }
             }
