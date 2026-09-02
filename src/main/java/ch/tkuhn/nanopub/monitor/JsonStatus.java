@@ -66,6 +66,7 @@ public class JsonStatus implements SerializableSupplier<IResource> {
             s.put("lastSeenOk", sd.getLastSeenDate() == null ? null : sd.getLastSeenDate().toInstant().toString());
             ServerIpInfo i = sd.getIpInfo();
             s.put("ip", i == null ? null : i.getIp());
+            s.put("region", i == null ? null : i.getRegionName());
             s.put("country", i == null ? null : i.getCountryName());
             s.put("city", i == null ? null : i.getCity());
             servers.add(s);

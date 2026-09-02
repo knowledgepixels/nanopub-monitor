@@ -14,6 +14,11 @@ public class ServerIpInfo implements Serializable {
     private String country = "unknown country";
     private String city = "unknown city";
     private String query = "unknown IP";
+    // The part of the world a server sits in is ip-api's "continent" field. Its "region" and
+    // "regionName" are the subdivision within a country ("VA", "Virginia"), which is finer than
+    // the country and answers a different question. Field names have to match the JSON keys,
+    // since these objects are deserialized straight from the ip-api response.
+    private String continent = "unknown region";
 
     /**
      * An empty ServerIpInfo instance representing unknown or unavailable data.
@@ -57,6 +62,16 @@ public class ServerIpInfo implements Serializable {
      */
     public String getCity() {
         return city;
+    }
+
+    /**
+     * Retrieves the region of the world the server is in, as a continent name: "Europe",
+     * "North America", "Asia", and so on.
+     *
+     * @return the region name
+     */
+    public String getRegionName() {
+        return continent;
     }
 
     /**

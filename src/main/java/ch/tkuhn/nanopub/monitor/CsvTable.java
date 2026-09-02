@@ -42,7 +42,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
         logger.debug("Generating CSV export of current server data");
         StringWriter sw = new StringWriter();
         CSVWriter w = new CSVWriter(sw);
-        w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count", "Registry Nanopub Count", "Sync Lag", "Loader Age (s)", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Server Location"});
+        w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count", "Registry Nanopub Count", "Sync Lag", "Loader Age (s)", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Region", "Server Location"});
         ServerList sl = ServerList.get();
         int rowCount = 0;
         for (ServerData sd : sl.getSortedServerData()) {
@@ -77,6 +77,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
                     (dist == null ? "" : dist + ""),
                     MonitorPage.formatDate(sd.getLastSeenDate()),
                     (i == null ? "" : i.getIp()),
+                    (i == null ? "" : i.getRegionName()),
                     (i == null ? "" : i.getCity() + ", " + i.getCountryName()),
             });
             rowCount++;

@@ -574,6 +574,25 @@ public class ServerData implements Serializable {
         return (int) calculateDistance(sLat, sLng, monitorIpInfo.getLatitude(), monitorIpInfo.getLongitude());
     }
 
+    /**
+     * The ip-api.com fields to ask for. The parameter is needed for "continent", which ip-api
+     * leaves out of its default response; asking for anything at all then means asking for
+     * everything {@link ServerIpInfo} reads, so the rest of the list has to stay in step with
+     * that class.
+     */
+    private static final String IP_API_FIELDS = "status,message,continent,country,city,lat,lon,query";
+
+    /**
+     * The ip-api.com request for a host, asking for exactly the fields {@link ServerIpInfo}
+     * reads.
+     *
+     * @param host the hostname or IP address to look up
+     * @return the request URL
+     */
+    static String ipApiUrl(String host) {
+        return "http://ip-api.com/json/" + host + "?fields=" + IP_API_FIELDS;
+    }
+
     private static final Map<String, ServerIpInfo> ipInfoMap = new ConcurrentHashMap<>();
     private static final Map<String, Long> ipInfoFetchedAt = new ConcurrentHashMap<>();
 
@@ -603,7 +622,7 @@ public class ServerData implements Serializable {
         }
         ipInfoFetchedAt.put(host, System.currentTimeMillis());
         ServerIpInfo serverIpInfo;
-        URL geoipUrl = new URI("http://ip-api.com/json/" + host).toURL();
+        URL geoipUrl = new URI(ipApiUrl(host)).toURL();
         HttpURLConnection con = null;
         try {
             con = (HttpURLConnection) geoipUrl.openConnection();
