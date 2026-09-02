@@ -92,7 +92,7 @@ public class ServerList implements Serializable {
      * across different settings is not meaningful, so the calculation is scoped per setting.
      *
      * @param setting the registry setting (trusty URI); if null, the result is null
-     * @return the majority trust state hash for the cohort, or null if none
+     * @return the majority trust state hash for the cohort, or null if the cohort has none
      */
     public String getMajorityTrustStateHashForSetting(String setting) {
         if (setting == null) return null;
@@ -116,7 +116,7 @@ public class ServerList implements Serializable {
      * boundary is not meaningful.
      *
      * @param testInstance whether to consider the test cohort (true) or the non-test cohort (false)
-     * @return the majority loaded-nanopub checksum for the cohort, or null if none
+     * @return the majority loaded-nanopub checksum for the cohort, or null if the cohort has none
      */
     public String getMajorityLoadedNanopubChecksum(boolean testInstance) {
         Map<String, Integer> counts = new HashMap<>();
@@ -131,18 +131,25 @@ public class ServerList implements Serializable {
     }
 
     /**
-     * Return the key with the strictly highest count in the given map, or null if the map is empty.
+     * Return the key with the strictly highest count in the given map, or null if the map is
+     * empty or its highest count is shared. A cohort that splits evenly has no majority to
+     * measure its members against, and picking one of the tied values would label the others
+     * outliers on nothing more than map iteration order.
      */
-    private static String majorityKey(Map<String, Integer> counts) {
+    static String majorityKey(Map<String, Integer> counts) {
         String majority = null;
         int best = 0;
+        boolean tied = false;
         for (Map.Entry<String, Integer> e : counts.entrySet()) {
             if (e.getValue() > best) {
                 best = e.getValue();
                 majority = e.getKey();
+                tied = false;
+            } else if (e.getValue() == best) {
+                tied = true;
             }
         }
-        return majority;
+        return tied ? null : majority;
     }
 
     /**
