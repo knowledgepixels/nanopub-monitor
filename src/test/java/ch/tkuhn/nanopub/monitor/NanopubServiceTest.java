@@ -79,6 +79,44 @@ class NanopubServiceTest {
         assertEquals("gray", nanopubService.getMapColor());
     }
 
+    // Announced with a version suffix, like the registry and query types, so the router must be
+    // recognised by type prefix rather than by an exact match.
+    @Test
+    void routerIsRecognisedWithAVersionSuffix() {
+        NanopubService router = new NanopubService(
+                Values.iri("https://router.example.org/"),
+                Values.iri("https://w3id.org/np/o/service/terms/nanopub-router-1.0"));
+        assertEquals("#dab40b", router.getMapColor());
+        assertEquals(0, router.getMapOffsetX());
+        assertEquals(-3, router.getMapOffsetY());
+    }
+
+    @Test
+    void routerDoesNotShareItsMapSpotWithAnotherService() {
+        NanopubService router = new NanopubService(
+                Values.iri("https://example.org/"),
+                Values.iri("https://w3id.org/np/o/service/terms/nanopub-router-1.0"));
+        for (IRI otherType : new IRI[]{
+                NanopubService.NANOPUB_QUERY_TYPE_IRI,
+                NanopubService.NANOPUB_REGISTRY_TYPE_IRI,
+                NanopubService.NANODASH_TYPE_IRI,
+                NanopubService.NANOPUB_MONITOR_TYPE_IRI,
+                NanopubService.NANOPUB_SERVER_TYPE_IRI}) {
+            NanopubService other = new NanopubService(Values.iri("https://example.org/"), otherType);
+            boolean sameSpot = other.getMapOffsetX() == router.getMapOffsetX()
+                    && other.getMapOffsetY() == router.getMapOffsetY();
+            assertEquals(false, sameSpot, "router overlaps " + other.getTypeLabel() + " on the map");
+        }
+    }
+
+    @Test
+    void routerTypeLabelIsReadable() {
+        NanopubService router = new NanopubService(
+                Values.iri("https://router.example.org/"),
+                Values.iri("https://w3id.org/np/o/service/terms/nanopub-router-1.0"));
+        assertEquals("nanopub-router-1.0", router.getTypeLabel());
+    }
+
     @Test
     void equalsWithNull() {
         String type = "type";

@@ -21,6 +21,7 @@ public class NanopubService {
     public static final IRI NANOPUB_QUERY_TYPE_IRI = vf.createIRI("https://w3id.org/np/o/service/terms/nanopub-query");
     public static final IRI NANOPUB_REGISTRY_TYPE_IRI = vf.createIRI("https://w3id.org/np/o/service/terms/nanopub-registry");
     public static final IRI NANODASH_TYPE_IRI = vf.createIRI("https://w3id.org/np/o/service/terms/nanodash");
+    public static final IRI NANOPUB_ROUTER_TYPE_IRI = vf.createIRI("https://w3id.org/np/o/service/terms/nanopub-router");
 
     private final IRI serviceIri;
     private final IRI typeIri;
@@ -89,6 +90,8 @@ public class NanopubService {
             return -3;
         } else if (typeIri.stringValue().startsWith(NANODASH_TYPE_IRI.stringValue())) {
             return -3;
+        } else if (typeIri.stringValue().startsWith(NANOPUB_ROUTER_TYPE_IRI.stringValue())) {
+            return 0;
         }
         return 0;
     }
@@ -118,6 +121,8 @@ public class NanopubService {
         } else if (typeIri.stringValue().startsWith(NANOPUB_REGISTRY_TYPE_IRI.stringValue())) {
             return 3;
         } else if (typeIri.stringValue().startsWith(NANODASH_TYPE_IRI.stringValue())) {
+            return -3;
+        } else if (typeIri.stringValue().startsWith(NANOPUB_ROUTER_TYPE_IRI.stringValue())) {
             return -3;
         }
         return 0;
@@ -149,6 +154,8 @@ public class NanopubService {
             return "#0bc9da";
         } else if (typeIri.stringValue().startsWith(NANODASH_TYPE_IRI.stringValue())) {
             return "#0b73da";
+        } else if (typeIri.stringValue().startsWith(NANOPUB_ROUTER_TYPE_IRI.stringValue())) {
+            return "#dab40b";
         }
         return "gray";
     }

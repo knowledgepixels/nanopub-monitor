@@ -504,6 +504,35 @@ public class ServerScanner implements ICode {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
             }
+        } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_ROUTER_TYPE_IRI)) {
+            // Probed at /status.json, which answers 200 with a JSON summary for as long as the
+            // process is serving, so the status column measures the router itself.
+            //
+            // Deliberately not /healthz: that endpoint reports whether the router still holds a
+            // fresh copy of *this monitor's* feed, and turns 503 when it does not. Grading routers
+            // on it would make a monitor outage look like every router failing, and would report
+            // that verdict from the very service that was down.
+            String statusUrl = d.getServiceId() + (d.getServiceId().endsWith("/") ? "" : "/") + "status.json";
+            logger.info("Probing router status at {}...", statusUrl);
+            try {
+                HttpGet get = new HttpGet(statusUrl);
+                StopWatch watch = new StopWatch();
+                watch.start();
+                HttpResponse resp = c.execute(get);
+                watch.stop();
+                // Read before the status check: the router sets the version header on every
+                // response, so a failing instance can still be identified by build.
+                d.setVersion(headerValue(resp, "Nanopub-Router-Version"));
+                if (!wasSuccessful(resp)) {
+                    logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
+                    d.reportTestFailure("DOWN");
+                } else {
+                    d.reportTestSuccess(watch.getTime());
+                }
+            } catch (Exception ex) {
+                logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
+                d.reportTestFailure("INACCESSIBLE");
+            }
         } else {
             logger.info("Trying to access {}...", d.getServiceId());
             try {
