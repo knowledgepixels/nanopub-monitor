@@ -4,6 +4,8 @@
 /bin
 /scratch
 /classpath.txt
+/docker-compose.override.yml
+/.env
 *.log
 local.*
 /src/main/resources/log4j.properties

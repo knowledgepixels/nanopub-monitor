@@ -1,0 +1,93 @@
+# Template for docker-compose.override.yml
+#
+# Copy this file to docker-compose.override.yml and adjust it:
+#
+#     cp docker-compose.override.yml.template docker-compose.override.yml
+#
+# A Nanopub Monitor instance runs without any of these settings: it discovers the
+# services to monitor by itself, and keeps no data. Every setting here is
+# therefore optional, and the defaults are fine for a public instance - copied as
+# it is, this file changes nothing. To uncomment a line, replace its leading '#'
+# with a space, so the indentation stays intact; leave the one uncommented
+# setting in place, since Docker Compose rejects an 'environment' key with
+# nothing under it. Section 3 lists values that go into a separate .env file, not
+# into this one.
+#
+# Note on connectivity: the monitor serves plain HTTP on port 7890 of the host
+# (see docker-compose.yml). To make the instance publicly reachable via HTTPS,
+# run a reverse proxy on the host that terminates TLS and forwards to it. To
+# check that the service itself is running, on the server run:
+# curl -I http://localhost:7890/
+
+services:
+  monitor:
+    environment:
+
+      # ----------------------------------------------------------------------
+      # Section 1: WHERE THE SERVER LIST COMES FROM
+      # ----------------------------------------------------------------------
+
+      # The monitor does not discover servers by scanning: it asks a Nanopub
+      # Query instance which services the network announces, and then tests each
+      # of them. Left unset, it finds the query instances through the nanopub
+      # setting, which is what a public instance wants. Set this to a
+      # whitespace-separated list of query instance URLs (with trailing slash) to
+      # use specific ones instead, e.g. a Query instance you run yourself:
+#     - NANOPUB_QUERY_INSTANCES=https://query.your.domain.com/
+
+      # How long a query instance that failed or reported itself as not ready is
+      # left out of the pool, in seconds (default 300):
+#     - NANOPUB_QUERY_EVICTION_COOLDOWN_SECONDS=300
+
+      # ----------------------------------------------------------------------
+      # Section 2: SCANNING AND DISPLAY - the defaults are fine for most
+      # instances. Each of these overrides the same-named setting in
+      # conf.properties (scan-freq, scan-threads, ...), which is where the
+      # defaults live.
+      # ----------------------------------------------------------------------
+
+      # Seconds between two scans of the whole server list. Every scan tests
+      # every known server, so raising this lowers the load on the monitored
+      # network as well as on this host. This one is spelled out rather than
+      # commented out, at its default value, so that the 'environment' key above
+      # is never empty:
+      - NANOPUB_MONITOR_SCAN_FREQ=10
+
+      # Parallel workers testing servers within a scan (default 8):
+#     - NANOPUB_MONITOR_SCAN_THREADS=8
+
+      # Show the world map of server locations on the start page (default true):
+#     - NANOPUB_MONITOR_SHOW_MAP=false
+
+      # Look up where each monitored server is located (default true). The
+      # lookups go to the third-party service ip-api.com, over plain HTTP, and
+      # send it the host names of the monitored servers; they are cached for 10
+      # minutes per host. Set this to false to make the instance stop contacting
+      # ip-api.com - on a host with restricted outbound access, or to keep the
+      # addresses of the monitored servers to yourself. The map then has nothing
+      # left to place, so switch it off along with this one:
+#     - NANOPUB_MONITOR_GET_GEOIP_INFO=false
+
+      # The application's log. docker-compose.yml sets JAVA_OPTS so that the log
+      # ends up in `docker compose logs`; setting JAVA_OPTS here replaces that
+      # value rather than adding to it, so repeat those two flags if you do:
+#     - JAVA_OPTS=-Dorg.slf4j.simpleLogger.logFile=System.out -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
+
+    # ------------------------------------------------------------------------
+    # Section 3: VERSION PINNING - this goes into a file named .env next to
+    # docker-compose.yml, NOT into this file, because docker-compose.yml builds
+    # the image name from it. Leave it out to run the latest release.
+    # ------------------------------------------------------------------------
+    #
+    # NANOPUB_MONITOR_IMAGE_TAG=1.6.0  # Pin the Monitor version; see README, "Upgrading"
+
+    # ------------------------------------------------------------------------
+    # Section 4: PORTS
+    # ------------------------------------------------------------------------
+
+    # Serve on a different host port, or bind it to localhost only, which is
+    # worth doing if a reverse proxy on this same host is the only thing that
+    # should reach it; '!override' replaces the port list from
+    # docker-compose.yml instead of adding to it:
+#   ports: !override
+#     - 127.0.0.1:7890:8080
