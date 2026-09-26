@@ -27,6 +27,9 @@ public class MonitorApplication extends WebApplication {
     public void init() {
         super.init();
         logger.info("Initializing nanopub-monitor application, version {}", MonitorVersion.get());
+        // Fail here rather than on the first request that happens to read the offending setting.
+        MonitorConf.get().validate();
+        logger.debug("Configuration validated");
         mountResource(".csv", ResourceReference.of("csv", CsvTable.instance()));
         mountResource(".json", ResourceReference.of("json", JsonStatus.instance()));
         logger.debug("Mounted .csv and .json status resources");
