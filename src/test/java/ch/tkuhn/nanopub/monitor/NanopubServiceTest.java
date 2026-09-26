@@ -4,6 +4,11 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Values;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -96,6 +101,30 @@ class NanopubServiceTest {
         NanopubService nanopubService1 = new NanopubService(serviceIri, typeIri);
         NanopubService nanopubService2 = new NanopubService(serviceIri, typeIri);
         assertEquals(nanopubService1, nanopubService2);
+    }
+
+    /**
+     * Wicket serializes every page it stores, and the pages showing server data hold one of these
+     * through {@link ServerData}. A non-serializable field here fails that, on every render.
+     */
+    @Test
+    void survivesSerialization() throws Exception {
+        NanopubService nanopubService = new NanopubService(
+                Values.iri("https://example.org/service"),
+                Values.iri("https://example.org/type"));
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ObjectOutputStream out = new ObjectOutputStream(bytes)) {
+            out.writeObject(nanopubService);
+        }
+        NanopubService restored;
+        try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
+            restored = (NanopubService) in.readObject();
+        }
+
+        assertEquals(nanopubService, restored);
+        assertEquals(nanopubService.getServiceIri(), restored.getServiceIri());
+        assertEquals(nanopubService.getTypeIri(), restored.getTypeIri());
     }
 
 }

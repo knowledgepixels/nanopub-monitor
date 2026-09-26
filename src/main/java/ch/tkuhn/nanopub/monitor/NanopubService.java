@@ -4,10 +4,17 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
+import java.io.Serializable;
+
 /**
  * A nanopublication service, identified by its IRI and type.
+ * <p>
+ * Serializable because {@link ServerData} holds one and Wicket serializes the pages that show
+ * server data. Both fields are RDF4J values, which are serializable themselves.
  */
-public class NanopubService {
+public class NanopubService implements Serializable {
+
+    private static final long serialVersionUID = -8016722140487100195L;
 
     private static final ValueFactory vf = SimpleValueFactory.getInstance();
 
