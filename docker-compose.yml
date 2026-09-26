@@ -5,3 +5,14 @@ services:
     restart: unless-stopped
     ports:
       - "7890:8080"
+    environment:
+      # Make the application's own log show up in `docker compose logs`. Both parts
+      # are needed: slf4j-simple otherwise writes to stderr, which Tomcat captures
+      # into its internal logging while the webapp starts up, and it logs nothing
+      # below WARN. An override that sets JAVA_OPTS replaces this whole value, so
+      # repeat these two flags there.
+      - JAVA_OPTS=-Dorg.slf4j.simpleLogger.logFile=System.out -Dorg.slf4j.simpleLogger.defaultLogLevel=info
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
