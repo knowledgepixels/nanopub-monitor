@@ -127,11 +127,30 @@ public class ServerScanner implements ICode {
      * @return true if the request succeeded and the test-instance header says so
      */
     static boolean saysTestInstance(HttpResponse resp) {
-        int code = resp.getStatusLine().getStatusCode();
-        if (code < 200 || code >= 300) {
+        if (!wasSuccessful(resp)) {
             return false;
         }
         return "true".equalsIgnoreCase(headerValue(resp, "Nanopub-Registry-Test-Instance"));
+    }
+
+    /**
+     * Whether a response comes from a Query instance that is a test instance in either
+     * sense: it declares itself one via {@code Nanopub-Query-Test-Instance}, or the
+     * registry it loads from declares itself one, which Query forwards as
+     * {@code Nanopub-Query-Registry-Test-Instance}. Both are needed, because a staging
+     * instance normally mirrors a production registry and can therefore only say so
+     * itself (knowledgepixels/nanopub-query#200), while a Query instance paired with a
+     * test registry only has the forwarded header.
+     *
+     * @param resp the response to a Query status request
+     * @return true if the request succeeded and either header says so
+     */
+    static boolean saysQueryTestInstance(HttpResponse resp) {
+        if (!wasSuccessful(resp)) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(headerValue(resp, "Nanopub-Query-Test-Instance"))
+                || "true".equalsIgnoreCase(headerValue(resp, "Nanopub-Query-Registry-Test-Instance"));
     }
 
     private void testServers(HttpClient c) {
@@ -438,7 +457,7 @@ public class ServerScanner implements ICode {
                     d.updateSyncHealth(
                             parseLongOrNull(headerValue(resp, "Nanopub-Query-Registry-Nanopub-Count")),
                             parseLongOrNull(headerValue(resp, "Nanopub-Query-Loader-Last-Success-Age-Seconds")));
-                    d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Query-Registry-Test-Instance")));
+                    d.setTestInstance(saysQueryTestInstance(resp));
                     String headerStatus = headerValue(resp, "Nanopub-Query-Status");
                     if (headerStatus == null || !headerStatus.equalsIgnoreCase("READY")) {
                         d.reportTestFailure("STATUS: " + (headerStatus == null ? "missing" : headerStatus));
@@ -525,7 +544,7 @@ public class ServerScanner implements ICode {
         }
     }
 
-    private boolean wasSuccessful(HttpResponse resp) {
+    private static boolean wasSuccessful(HttpResponse resp) {
         int c = resp.getStatusLine().getStatusCode();
         return c >= 200 && c < 300;
     }
