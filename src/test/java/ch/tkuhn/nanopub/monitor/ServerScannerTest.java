@@ -41,4 +41,38 @@ class ServerScannerTest {
                 "A redirect is not a registry answering for itself");
     }
 
+    private static HttpResponse queryResponse(int code, String ownHeader, String registryHeader) {
+        HttpResponse resp = new BasicHttpResponse(HttpVersion.HTTP_1_1, code, null);
+        if (ownHeader != null) {
+            resp.addHeader("Nanopub-Query-Test-Instance", ownHeader);
+        }
+        if (registryHeader != null) {
+            resp.addHeader("Nanopub-Query-Registry-Test-Instance", registryHeader);
+        }
+        return resp;
+    }
+
+    @Test
+    void aQueryInstanceCallingItselfATestInstanceIsOne() {
+        // The case the forwarded registry header cannot express: a staging instance that
+        // mirrors a production registry (knowledgepixels/nanopub-query#200).
+        assertTrue(ServerScanner.saysQueryTestInstance(queryResponse(200, "true", "false")));
+        assertTrue(ServerScanner.saysQueryTestInstance(queryResponse(200, "TRUE", null)),
+                "The header is not case-sensitive");
+    }
+
+    @Test
+    void aQueryInstanceOfATestRegistryIsOne() {
+        assertTrue(ServerScanner.saysQueryTestInstance(queryResponse(200, null, "true")));
+    }
+
+    @Test
+    void aProductionQueryInstanceIsNotATestInstance() {
+        assertFalse(ServerScanner.saysQueryTestInstance(queryResponse(200, "false", "false")));
+        assertFalse(ServerScanner.saysQueryTestInstance(queryResponse(200, null, null)),
+                "An older instance that reports neither header is not assumed to be a test instance");
+        assertFalse(ServerScanner.saysQueryTestInstance(queryResponse(503, "true", "true")),
+                "A response that did not succeed says nothing about the instance");
+    }
+
 }
