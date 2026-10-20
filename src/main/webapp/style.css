@@ -134,14 +134,243 @@ strong {
 }
 
 #map {
-  height: 400px;
-  padding-top: 5px;
-  margin-top: 15px;
-  margin-bottom: 15px;
-  margin-right: auto;
-  margin-left: auto;
-  text-align: center;
-  background: #09baa2;
+  --map-sea: #09baa2;
+  --map-land: #f0efeb;
+  --map-border: #ccc6ae;
+  --map-marker-stroke: #000;
+  --map-popover-bg: #fff;
+  --map-popover-border: #bbb;
+  --map-popover-muted: #666;
+  --map-entry-hover: #eef7f6;
+  --status-ok: #1d8049;
+  --status-problem: #c2302f;
+  --map-marker-radius: 4px;
+  position: relative;
+  max-width: 1000px;
+  margin: 15px auto;
+}
+
+#map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  touch-action: pan-y;
+}
+
+#map.zoomed svg {
+  cursor: grab;
+  touch-action: none;
+}
+
+#map.panning svg {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.map-zoom-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-zoom-button {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--map-popover-border);
+  border-radius: 4px;
+  background: var(--map-popover-bg);
+  color: #222;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.map-zoom-button.map-zoom-reset {
+  font-size: 11px;
+}
+
+.map-zoom-button:hover:not(:disabled) {
+  background: var(--map-entry-hover);
+}
+
+.map-zoom-button:focus-visible {
+  outline: 2px solid #222;
+  outline-offset: 1px;
+}
+
+.map-zoom-button:disabled {
+  color: #aaa;
+  cursor: default;
+}
+
+.map-zoom-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.map-zoom-hint[hidden] {
+  display: none;
+}
+
+.map-sea {
+  fill: var(--map-sea);
+}
+
+.map-land path {
+  vector-effect: non-scaling-stroke;
+  fill: var(--map-land);
+  stroke: var(--map-border);
+  stroke-opacity: 0.25;
+}
+
+.map-marker {
+  r: var(--map-marker-radius);
+  vector-effect: non-scaling-stroke;
+  stroke: var(--map-marker-stroke);
+  stroke-width: 0.5px;
+  cursor: pointer;
+  transition: r 0.15s ease, stroke-width 0.15s ease;
+}
+
+.map-marker:hover,
+.map-marker:focus-visible,
+.map-marker.highlighted {
+  r: calc(var(--map-marker-radius) * 1.75);
+  stroke-width: 1.5px;
+  outline: none;
+}
+
+.map-popover {
+  position: absolute;
+  z-index: 10;
+  min-width: 220px;
+  max-width: min(340px, calc(100% - 8px));
+  padding: 8px 0 4px;
+  background: var(--map-popover-bg);
+  border: 1px solid var(--map-popover-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  text-align: left;
+}
+
+.map-popover[hidden] {
+  display: none;
+}
+
+.map-popover-heading {
+  padding: 0 12px 6px;
+  font-weight: bold;
+  color: black;
+}
+
+.map-popover-region {
+  display: block;
+  font-weight: normal;
+  color: var(--map-popover-muted);
+}
+
+.map-popover-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.map-popover-entry {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 5px 12px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-popover-entry:hover,
+.map-popover-entry:focus-visible {
+  background: var(--map-entry-hover);
+  outline: none;
+}
+
+.map-popover-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 3px;
+  border-radius: 2px;
+}
+
+.map-popover-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.map-popover-url {
+  overflow-wrap: anywhere;
+}
+
+.map-popover-meta {
+  color: var(--map-popover-muted);
+}
+
+.status-ok {
+  color: var(--status-ok);
+  font-weight: bold;
+}
+
+.status-problem {
+  color: var(--status-problem);
+  font-weight: bold;
+}
+
+tr.row-highlight td {
+  background: #eef7f6;
+}
+
+tr.row-flash td {
+  animation: row-flash 2s ease-out;
+}
+
+@keyframes row-flash {
+  from {
+    background: #bfeee6;
+  }
+  to {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-marker {
+    transition: none;
+  }
+
+  tr.row-flash td {
+    animation: none;
+    background: #eef7f6;
+  }
 }
 
 p {

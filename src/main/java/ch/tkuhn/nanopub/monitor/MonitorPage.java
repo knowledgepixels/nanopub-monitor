@@ -3,8 +3,6 @@ package ch.tkuhn.nanopub.monitor;
 import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.ajax.AbstractAjaxTimerBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.markup.head.IHeaderResponse;
-import org.apache.wicket.markup.head.JavaScriptReferenceHeaderItem;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
@@ -34,7 +32,6 @@ public class MonitorPage extends WebPage {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private static final Logger logger = LoggerFactory.getLogger(MonitorPage.class);
-    private String points = "";
 
     /**
      * Constructs a MonitorPage with the given parameters.
@@ -44,18 +41,9 @@ public class MonitorPage extends WebPage {
     public MonitorPage(final PageParameters parameters) {
         super(parameters);
         logger.debug("Constructing MonitorPage");
-        if (MonitorConf.get().showMap()) {
-            for (ServerData sd : ServerList.get().getServerData()) {
-                try {
-                    ServerIpInfo ipInfo = sd.getIpInfo();
-                    NanopubService s = sd.getService();
-                    points += "[\"" + ipInfo.getLatitude() + "," + ipInfo.getLongitude() + "\",\"" + s.getMapColor() + "\",[" + s.getMapOffsetX() + "," + s.getMapOffsetY() + "]],";
-                } catch (Exception ex) {
-                    logger.error("Could not get map coordinates for server '{}'", sd.getServiceId(), ex);
-                }
-            }
-            points = points.replaceFirst(",$", "");
-        }
+        WebMarkupContainer map = new WebMarkupContainer("map");
+        map.setVisible(MonitorConf.get().showMap());
+        add(map);
 
         // The counts and the table are re-read from the live ServerList on every
         // render, so an Ajax timer can repaint just these without a full page reload.
@@ -98,6 +86,7 @@ public class MonitorPage extends WebPage {
                 ServerList sl = ServerList.get();
                 ServerData d = item.getModelObject();
                 ServerIpInfo i = d.getIpInfo();
+                item.add(AttributeModifier.replace("data-service", d.getServiceId()));
                 ExternalLink urlLink = new ExternalLink("urllink", d.getServiceId());
                 urlLink.add(new Label("url", d.getServiceId()));
                 item.add(urlLink);
@@ -167,12 +156,6 @@ public class MonitorPage extends WebPage {
         });
 
         ServerScanner.initDaemon();
-    }
-
-    @Override
-    public void renderHead(IHeaderResponse response) {
-        super.renderHead(response);
-        response.render(JavaScriptReferenceHeaderItem.forScript("var points = [" + points + "];", null));
     }
 
     /**

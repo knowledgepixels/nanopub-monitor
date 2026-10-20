@@ -32,7 +32,8 @@ public class MonitorApplication extends WebApplication {
         logger.debug("Configuration validated");
         mountResource(".csv", ResourceReference.of("csv", CsvTable.instance()));
         mountResource(".json", ResourceReference.of("json", JsonStatus.instance()));
-        logger.debug("Mounted .csv and .json status resources");
+        mountResource(".map.json", ResourceReference.of("map-json", MapData.instance()));
+        logger.debug("Mounted .csv, .json and .map.json resources");
         getCspSettings().blocking().disabled();
         logger.debug("CSP blocking disabled");
         getRequestCycleListeners().add(new IRequestCycleListener() {
