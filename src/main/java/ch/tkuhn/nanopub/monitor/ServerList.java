@@ -14,6 +14,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A list of nanopublication servers, fetched from a central registry API.
@@ -24,21 +25,21 @@ public class ServerList implements Serializable {
     private static final Logger logger = LoggerFactory.getLogger(ServerList.class);
 
     private static ServerList serverList;
-    private static ServerIpInfo monitorIpInfo;
+    private static volatile ServerIpInfo monitorIpInfo;
 
     /**
      * Get the singleton instance of the ServerList.
      *
      * @return the ServerList instance
      */
-    public static ServerList get() {
+    public static synchronized ServerList get() {
         if (serverList == null) {
             serverList = new ServerList();
         }
         return serverList;
     }
 
-    private static final Map<NanopubService, ServerData> servers = new HashMap<NanopubService, ServerData>();
+    private static final Map<NanopubService, ServerData> servers = new ConcurrentHashMap<>();
 
     private ServerList() {
         refresh();
@@ -232,7 +233,7 @@ public class ServerList implements Serializable {
      */
     private static final long TEST_INSTANCE_PROBE_INTERVAL_MS = 10 * 60 * 1000;
 
-    private static final Map<String, Long> testInstanceProbedAt = new HashMap<>();
+    private static final Map<String, Long> testInstanceProbedAt = new ConcurrentHashMap<>();
 
     /**
      * Add the test instances of the registries the network announces. A test deployment is
@@ -331,8 +332,7 @@ public class ServerList implements Serializable {
         if (servers.containsKey(ns)) {
             return false;
         }
-        servers.put(ns, new ServerData(ns, null));
-        return true;
+        return servers.putIfAbsent(ns, new ServerData(ns, null)) == null;
     }
 
     private void refreshFromApi() {
