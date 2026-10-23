@@ -106,9 +106,57 @@ body {
 }
 
 header {
+  position: relative;
   display: grid;
   gap: 6px;
   text-align: center;
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+:root:not([data-theme]) .theme-toggle {
+  display: none;
+}
+
+.theme-toggle:hover {
+  border-color: var(--muted);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-toggle svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-toggle .icon-sun,
+:root[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun {
+  display: block;
 }
 
 h1, h2 {

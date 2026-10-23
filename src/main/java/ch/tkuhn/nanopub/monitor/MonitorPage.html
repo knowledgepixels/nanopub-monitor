@@ -5,8 +5,9 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Nanopub Monitor</title>
-  <link rel="stylesheet" href="style.css?v=5" type="text/css"/>
+  <link rel="stylesheet" href="style.css?v=6" type="text/css"/>
   <link rel="shortcut icon" type="image/x-icon" href="favicon.svg?v=3">
+  <script src="theme.js?v=1"></script>
   <script src="world.js"></script>
   <script src="drawmap.js?v=5" defer></script>
 </head>
@@ -16,6 +17,10 @@
 <div class="page">
 
 <header>
+  <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch colour mode">
+    <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+  </button>
   <h1>Nanopub Monitor</h1>
   <p class="counts" wicket:id="counts">
     <strong wicket:id="server-count"></strong> nanopub services
