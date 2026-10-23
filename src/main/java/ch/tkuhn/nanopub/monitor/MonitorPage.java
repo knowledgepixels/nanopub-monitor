@@ -378,8 +378,8 @@ public class MonitorPage extends WebPage {
                 .setVisible(d.getAvgResponseTimeInMs() != null));
         Label lastSeen = new Label("last-seen", ServiceCells.formatLastSeen(d.getLastSeenDate(), new Date()));
         String exactTime = d.getLastSeenDate() == null ? "never" : formatDate(d.getLastSeenDate());
-        lastSeen.add(AttributeModifier.replace("title",
-                "Last seen OK " + exactTime + " · " + d.getDistanceString() + " from monitor"));
+        String distance = d.getDistanceInKm() == null ? "" : " · " + d.getDistanceString() + " from monitor";
+        lastSeen.add(AttributeModifier.replace("title", "Last seen OK " + exactTime + distance));
         lastSeen.setVisible(okRatio != null);
         item.add(lastSeen);
     }

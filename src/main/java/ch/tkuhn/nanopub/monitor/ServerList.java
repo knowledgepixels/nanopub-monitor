@@ -187,12 +187,13 @@ public class ServerList implements Serializable {
 
     /**
      * Get the IP information of the monitor server.
-     * This method fetches the information only once and caches it for future calls.
+     * Once the information has coordinates it is cached for future calls; until then each call
+     * fetches it again, which {@link ServerData#fetchIpInfo(String)} throttles.
      *
      * @return the ServerIpInfo of the monitor server, or null if it could not be fetched
      */
     public ServerIpInfo getMonitorIpInfo() {
-        if (monitorIpInfo == null) {
+        if (monitorIpInfo == null || !monitorIpInfo.hasCoordinates()) {
             try {
                 monitorIpInfo = ServerData.fetchIpInfo("");
             } catch (Exception ex) {

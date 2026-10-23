@@ -540,6 +540,7 @@ public class ServerData implements Serializable {
 
     /**
      * Get the distance from the monitor to the server as a formatted string, or "?" if unknown.
+     * Only a known distance is cached, so an unknown one is retried once both locations are known.
      *
      * @return the distance string
      */
@@ -547,10 +548,9 @@ public class ServerData implements Serializable {
         if (distanceString == null) {
             Integer distKm = getDistanceInKm();
             if (distKm == null) {
-                distanceString = "?";
-            } else {
-                distanceString = distKm + " km";
+                return "?";
             }
+            distanceString = distKm + " km";
         }
         return distanceString;
     }
@@ -561,17 +561,22 @@ public class ServerData implements Serializable {
      * @return the distance in kilometers, or null
      */
     public Integer getDistanceInKm() {
-        ServerIpInfo monitorIpInfo = ServerList.get().getMonitorIpInfo();
-        if (monitorIpInfo == null) {
+        return distanceInKm(getIpInfo(), ServerList.get().getMonitorIpInfo());
+    }
+
+    /**
+     * Get the distance between two locations in kilometers, or null if either location lacks coordinates.
+     *
+     * @param serverIpInfo  the server's location info (might be null)
+     * @param monitorIpInfo the monitor's location info (might be null)
+     * @return the distance in kilometers, or null
+     */
+    static Integer distanceInKm(ServerIpInfo serverIpInfo, ServerIpInfo monitorIpInfo) {
+        if (serverIpInfo == null || monitorIpInfo == null || !serverIpInfo.hasCoordinates() || !monitorIpInfo.hasCoordinates()) {
             return null;
         }
-        ServerIpInfo serverIpInfo = getIpInfo();
-        Double sLat = serverIpInfo.getLatitude();
-        Double sLng = serverIpInfo.getLongitude();
-        if (sLat == null || sLng == null) {
-            return null;
-        }
-        return (int) calculateDistance(sLat, sLng, monitorIpInfo.getLatitude(), monitorIpInfo.getLongitude());
+        return (int) calculateDistance(serverIpInfo.getLatitude(), serverIpInfo.getLongitude(),
+                monitorIpInfo.getLatitude(), monitorIpInfo.getLongitude());
     }
 
     /**
