@@ -5,11 +5,12 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Nanopub Monitor</title>
-  <link rel="stylesheet" href="style.css?v=6" type="text/css"/>
+  <link rel="stylesheet" href="style.css?v=7" type="text/css"/>
   <link rel="shortcut icon" type="image/x-icon" href="favicon.svg?v=3">
   <script src="theme.js?v=1"></script>
   <script src="world.js"></script>
   <script src="drawmap.js?v=5" defer></script>
+  <script src="summarybar.js?v=1" defer></script>
 </head>
 
 <body>
@@ -31,11 +32,17 @@
 <div id="map" wicket:id="map"></div>
 
 <div class="servertable" wicket:id="tablecontainer">
-  <nav class="summary" aria-label="Service types">
+  <nav class="summary" id="summary" aria-label="Service types">
     <a class="summary-card" wicket:id="summary">
       <span class="summary-name"><span class="swatch" wicket:id="swatch"></span><span wicket:id="title"></span></span>
       <span class="summary-tally"><b wicket:id="ok"></b> of <span wicket:id="total"></span> OK<span wicket:id="attention"> · <span class="summary-problems" wicket:id="attention-count"></span></span></span>
     </a>
+  </nav>
+
+  <nav class="summary-bar" id="summary-bar" aria-label="Service types">
+    <div class="summary-bar-inner">
+      <a class="summary-chip" wicket:id="summary-bar"><span class="swatch" wicket:id="swatch"></span><span wicket:id="title"></span><span class="summary-chip-tally" wicket:id="tally"></span><span class="summary-chip-attention" wicket:id="attention"></span></a>
+    </div>
   </nav>
 
   <section class="service-type" wicket:id="sections">

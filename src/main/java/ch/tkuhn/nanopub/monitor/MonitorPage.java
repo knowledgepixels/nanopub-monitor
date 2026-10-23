@@ -81,6 +81,7 @@ public class MonitorPage extends WebPage {
             }
         };
         tableContainer.add(summaryCards(sections));
+        tableContainer.add(summaryBar(sections));
         tableContainer.add(sectionTables(sections));
 
         // Poll every 10 seconds and repaint only the counts and the table.
@@ -119,6 +120,31 @@ public class MonitorPage extends WebPage {
                 item.add(new Label("total", section.getServers().size()));
                 WebMarkupContainer attention = new WebMarkupContainer("attention");
                 attention.add(new Label("attention-count", section.getAttentionCount() + " need attention"));
+                attention.setVisible(section.getAttentionCount() > 0);
+                item.add(attention);
+            }
+        };
+    }
+
+    /**
+     * Build the compact summary bar, which stays at the top of the window while scrolling down the sections.
+     *
+     * @param sections the sections to summarize
+     * @return the list of chips, one per section
+     */
+    private static ListView<ServiceSection> summaryBar(IModel<List<ServiceSection>> sections) {
+        return new ListView<>("summary-bar", sections) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void populateItem(ListItem<ServiceSection> item) {
+                ServiceSection section = item.getModelObject();
+                item.add(AttributeModifier.replace("href", "#" + section.getAnchor()));
+                item.add(swatch(section));
+                item.add(new Label("title", section.getTitle()));
+                item.add(new Label("tally", section.getOkCount() + "/" + section.getServers().size()));
+                Label attention = new Label("attention", section.getAttentionCount());
+                attention.add(AttributeModifier.replace("title", section.getAttentionCount() + " need attention"));
                 attention.setVisible(section.getAttentionCount() > 0);
                 item.add(attention);
             }
