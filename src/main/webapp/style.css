@@ -351,6 +351,22 @@ strong, b {
   font-size: 12.5px;
 }
 
+.section-types {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.type-link {
+  color: var(--muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.type-link:hover {
+  color: var(--fg);
+}
+
 .table-wrap {
   min-width: 0;
   overflow-x: auto;

@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * One section of the monitor table: the instances of one kind of service, with the columns that kind
@@ -24,6 +25,7 @@ public class ServiceSection implements Serializable {
     private final String color;
     private final List<ServerData> servers;
     private final Set<ServiceKind.Column> columns;
+    private final List<NanopubService> types;
     private final int okCount;
     private final int attentionCount;
 
@@ -41,6 +43,7 @@ public class ServiceSection implements Serializable {
         this.anchor = kind == ServiceKind.OTHER ? toAnchor(typeLabel) : kind.getAnchor();
         this.color = servers.get(0).getService().getMapColor();
         this.columns = columnsFor(kind, servers);
+        this.types = distinctTypes(servers);
         this.servers = sortedByAttention(servers, serverList);
         this.okCount = (int) servers.stream().filter(sd -> "OK".equals(sd.getStatusString())).count();
         this.attentionCount = (int) servers.stream().filter(sd -> needsAttention(sd, serverList)).count();
@@ -129,6 +132,20 @@ public class ServiceSection implements Serializable {
     }
 
     /**
+     * Get one service per distinct type IRI, ordered by type IRI, to name and link the types in a section.
+     *
+     * @param servers the instances
+     * @return one service per type
+     */
+    private static List<NanopubService> distinctTypes(List<ServerData> servers) {
+        Map<String, NanopubService> byTypeIri = new TreeMap<>();
+        for (ServerData sd : servers) {
+            byTypeIri.putIfAbsent(sd.getService().getTypeIri().stringValue(), sd.getService());
+        }
+        return new ArrayList<>(byTypeIri.values());
+    }
+
+    /**
      * Get the optional columns a section shows: those its kind reports, plus the nanopub count
      * whenever an instance of another type reports one.
      *
@@ -179,6 +196,24 @@ public class ServiceSection implements Serializable {
      */
     public List<ServerData> getServers() {
         return servers;
+    }
+
+    /**
+     * Get the service types in this section, one service standing for each type.
+     *
+     * @return the services, one per distinct type IRI
+     */
+    public List<NanopubService> getTypes() {
+        return types;
+    }
+
+    /**
+     * Whether the section holds more than one service type, e.g. two versions of the registry type.
+     *
+     * @return true if the rows need to name their own type
+     */
+    public boolean hasSeveralTypes() {
+        return types.size() > 1;
     }
 
     /**

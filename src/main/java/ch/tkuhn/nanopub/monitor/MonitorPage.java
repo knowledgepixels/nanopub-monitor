@@ -169,12 +169,32 @@ public class MonitorPage extends WebPage {
                 item.add(new Label("title", section.getTitle()));
                 int instances = section.getServers().size();
                 item.add(new Label("instances", instances + (instances == 1 ? " instance" : " instances")));
+                item.add(typeLinks(section));
                 item.add(columnHeader("trust-header", section, ServiceKind.Column.TRUST_STATE));
                 item.add(columnHeader("checksum-header", section, ServiceKind.Column.CHECKSUM));
                 item.add(columnHeader("count-header", section, ServiceKind.Column.NANOPUB_COUNT));
                 item.add(columnHeader("sync-header", section, ServiceKind.Column.SYNC));
                 item.add(columnHeader("loader-header", section, ServiceKind.Column.LOADER));
                 item.add(serviceRows(section));
+            }
+        };
+    }
+
+    /**
+     * Build the links naming the exact service types of a section, each pointing to its type IRI.
+     *
+     * @param section the section
+     * @return the list of type links
+     */
+    private static ListView<NanopubService> typeLinks(ServiceSection section) {
+        return new ListView<>("types", section.getTypes()) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void populateItem(ListItem<NanopubService> item) {
+                NanopubService type = item.getModelObject();
+                item.add(AttributeModifier.replace("href", type.getTypeIri().stringValue()));
+                item.add(new Label("type-label", type.getTypeLabel()));
             }
         };
     }
@@ -195,6 +215,7 @@ public class MonitorPage extends WebPage {
                 String groupLabel = ServerList.get().getHashGroupLabel(d);
                 item.add(AttributeModifier.replace("data-service", d.getServiceId()));
                 addServiceCell(item, d);
+                item.add(new Label("row-type", d.getService().getTypeLabel()).setVisible(section.hasSeveralTypes()));
                 addStatusCell(item, d);
                 item.add(trustStateCell(d, groupLabel).setVisible(section.shows(ServiceKind.Column.TRUST_STATE)));
                 item.add(checksumCell(d, groupLabel).setVisible(section.shows(ServiceKind.Column.CHECKSUM)));

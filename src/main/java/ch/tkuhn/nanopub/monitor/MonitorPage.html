@@ -5,7 +5,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Nanopub Monitor</title>
-  <link rel="stylesheet" href="style.css?v=7" type="text/css"/>
+  <link rel="stylesheet" href="style.css?v=8" type="text/css"/>
   <link rel="shortcut icon" type="image/x-icon" href="favicon.svg?v=3">
   <script src="theme.js?v=1"></script>
   <script src="world.js"></script>
@@ -49,6 +49,7 @@
     <div class="section-head">
       <h2><span class="swatch" wicket:id="swatch"></span><span wicket:id="title"></span></h2>
       <span class="section-meta" wicket:id="instances"></span>
+      <span class="section-types"><a class="type-link mono" wicket:id="types" target="_blank" rel="noopener"><span wicket:id="type-label"></span></a></span>
     </div>
     <div class="table-wrap">
       <table>
@@ -67,7 +68,7 @@
         </thead>
         <tbody>
           <tr wicket:id="rows">
-            <td class="svc"><a wicket:id="urllink"><span wicket:id="url"></span></a><span wicket:id="testchip" class="test-chip">TEST</span><span class="sub" wicket:id="version"></span></td>
+            <td class="svc"><a wicket:id="urllink" target="_blank" rel="noopener"><span wicket:id="url"></span></a><span wicket:id="testchip" class="test-chip">TEST</span><span class="sub" wicket:id="version"></span><span class="sub mono" wicket:id="row-type"></span></td>
             <td data-label="Status"><span class="badge" wicket:id="status"></span></td>
             <td data-label="Setting / trust state" wicket:id="trust"><span class="mono" wicket:id="setting"></span><span class="sub"><span wicket:id="trust-hash"></span><span class="pill" wicket:id="trust-group"></span></span></td>
             <td data-label="Checksum" wicket:id="checksum"><span class="mono" wicket:id="checksum-hash"></span><span class="pill" wicket:id="checksum-group"></span></td>
