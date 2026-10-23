@@ -1,16 +1,17 @@
 package ch.tkuhn.nanopub.monitor;
 
 import org.apache.wicket.AttributeModifier;
+import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AbstractAjaxTimerBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.link.ExternalLink;
-import org.apache.wicket.markup.repeater.Item;
-import org.apache.wicket.markup.repeater.data.DataView;
-import org.apache.wicket.markup.repeater.data.ListDataProvider;
+import org.apache.wicket.markup.html.list.ListItem;
+import org.apache.wicket.markup.html.list.ListView;
 import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.LoadableDetachableModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The main page of the nanopub-monitor web application, displaying the status of nanopublication servers.
+ * The main page of the nanopub-monitor web application, displaying the status of nanopublication servers
+ * in one section per kind of service.
  */
 public class MonitorPage extends WebPage {
 
@@ -69,78 +71,17 @@ public class MonitorPage extends WebPage {
         tableContainer.setOutputMarkupId(true);
         add(tableContainer);
 
-        tableContainer.add(new DataView<ServerData>("rows", new ListDataProvider<ServerData>() {
-
-            private static final long serialVersionUID = 8901243870718834567L;
+        IModel<List<ServiceSection>> sections = new LoadableDetachableModel<>() {
+            private static final long serialVersionUID = 1L;
 
             @Override
-            protected List<ServerData> getData() {
-                return ServerList.get().getSortedServerData();
+            protected List<ServiceSection> load() {
+                ServerList serverList = ServerList.get();
+                return ServiceSection.of(serverList.getSortedServerData(), serverList);
             }
-
-        }) {
-
-            private static final long serialVersionUID = 4703849210371741467L;
-
-            public void populateItem(final Item<ServerData> item) {
-                ServerList sl = ServerList.get();
-                ServerData d = item.getModelObject();
-                ServerIpInfo i = d.getIpInfo();
-                item.add(AttributeModifier.replace("data-service", d.getServiceId()));
-                ExternalLink urlLink = new ExternalLink("urllink", d.getServiceId());
-                urlLink.add(new Label("url", d.getServiceId()));
-                item.add(urlLink);
-                ExternalLink typeLink = new ExternalLink("typelink", d.getService().getTypeIri().stringValue());
-                typeLink.add(new Label("type", d.getService().getTypeLabel()));
-                typeLink.add(new AttributeModifier("style", "background: " + d.getService().getMapColor()));
-                item.add(typeLink);
-                Label testChip = new Label("testchip", "TEST");
-                testChip.setVisible(d.isTestInstance());
-                item.add(testChip);
-                item.add(new Label("version", d.getVersion() == null ? "" : d.getVersion()));
-                Label statusLabel = new Label("status", d.getStatusString());
-                if (!d.getStatusString().equals("OK")) {
-                    statusLabel.add(new AttributeModifier("style", "color: red"));
-                }
-                item.add(statusLabel);
-                String groupLabel = sl.getHashGroupLabel(d);
-                String hashCell = formatTrustHashCell(d, groupLabel);
-                Label trustHashLabel = new Label("trusthash", hashCell);
-                if ("outlier".equals(groupLabel)) {
-                    trustHashLabel.add(new AttributeModifier("style", "color: red"));
-                }
-                item.add(trustHashLabel);
-                item.add(new Label("nanopubcount", d.getNanopubCountString()));
-                // Any non-zero lag is worth showing in red: unlike the checksum outlier,
-                // this is measured against the instance's own registry, so it means the
-                // instance is genuinely missing nanopubs rather than merely disagreeing
-                // with its peers.
-                Label syncLagLabel = new Label("synclag", d.getSyncLagString());
-                if (d.isBehind()) {
-                    syncLagLabel.add(new AttributeModifier("style", "color: red"));
-                }
-                item.add(syncLagLabel);
-                Label loaderAgeLabel = new Label("loaderage", d.getLoaderAgeString());
-                Long loaderAge = d.getLoaderLastSuccessAgeSeconds();
-                if (loaderAge != null && loaderAge > SyncHealth.LOADER_STALL_SECONDS) {
-                    loaderAgeLabel.add(new AttributeModifier("style", "color: red"));
-                }
-                item.add(loaderAgeLabel);
-                item.add(new Label("successratio", d.getSuccessRatioString()));
-                item.add(new Label("resptime", d.getAvgResponseTimeString() + " (" + d.getDistanceString() + ")"));
-                item.add(new Label("lastseen", formatDate(d.getLastSeenDate())));
-                if (i == null) {
-                    item.add(new Label("ip", "unknown"));
-                    item.add(new Label("region", "unknown"));
-                    item.add(new Label("location", "unknown"));
-                } else {
-                    item.add(new Label("ip", i.getIp()));
-                    item.add(new Label("region", i.getRegionName()));
-                    item.add(new Label("location", i.getCity() + ", " + i.getCountryName()));
-                }
-            }
-
-        });
+        };
+        tableContainer.add(summaryCards(sections));
+        tableContainer.add(sectionTables(sections));
 
         // Poll every 10 seconds and repaint only the counts and the table.
         tableContainer.add(new AbstractAjaxTimerBehavior(Duration.ofSeconds(10)) {
@@ -156,6 +97,258 @@ public class MonitorPage extends WebPage {
         });
 
         ServerScanner.initDaemon();
+    }
+
+    /**
+     * Build the summary cards, one per section, each counting the OK instances and linking to its section.
+     *
+     * @param sections the sections to summarize
+     * @return the list of cards
+     */
+    private static ListView<ServiceSection> summaryCards(IModel<List<ServiceSection>> sections) {
+        return new ListView<>("summary", sections) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void populateItem(ListItem<ServiceSection> item) {
+                ServiceSection section = item.getModelObject();
+                item.add(AttributeModifier.replace("href", "#" + section.getAnchor()));
+                item.add(swatch(section));
+                item.add(new Label("title", section.getTitle()));
+                item.add(new Label("ok", section.getOkCount()));
+                item.add(new Label("total", section.getServers().size()));
+                WebMarkupContainer attention = new WebMarkupContainer("attention");
+                attention.add(new Label("attention-count", section.getAttentionCount() + " need attention"));
+                attention.setVisible(section.getAttentionCount() > 0);
+                item.add(attention);
+            }
+        };
+    }
+
+    /**
+     * Build one table per section, showing the columns its kind of service reports.
+     *
+     * @param sections the sections to show
+     * @return the list of section tables
+     */
+    private static ListView<ServiceSection> sectionTables(IModel<List<ServiceSection>> sections) {
+        return new ListView<>("sections", sections) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void populateItem(ListItem<ServiceSection> item) {
+                ServiceSection section = item.getModelObject();
+                item.add(AttributeModifier.replace("id", section.getAnchor()));
+                item.add(swatch(section));
+                item.add(new Label("title", section.getTitle()));
+                int instances = section.getServers().size();
+                item.add(new Label("instances", instances + (instances == 1 ? " instance" : " instances")));
+                item.add(columnHeader("trust-header", section, ServiceKind.Column.TRUST_STATE));
+                item.add(columnHeader("checksum-header", section, ServiceKind.Column.CHECKSUM));
+                item.add(columnHeader("count-header", section, ServiceKind.Column.NANOPUB_COUNT));
+                item.add(columnHeader("sync-header", section, ServiceKind.Column.SYNC));
+                item.add(columnHeader("loader-header", section, ServiceKind.Column.LOADER));
+                item.add(serviceRows(section));
+            }
+        };
+    }
+
+    /**
+     * Build the rows of one section's table.
+     *
+     * @param section the section whose instances to list
+     * @return the list of rows
+     */
+    private static ListView<ServerData> serviceRows(ServiceSection section) {
+        return new ListView<>("rows", section.getServers()) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void populateItem(ListItem<ServerData> item) {
+                ServerData d = item.getModelObject();
+                String groupLabel = ServerList.get().getHashGroupLabel(d);
+                item.add(AttributeModifier.replace("data-service", d.getServiceId()));
+                addServiceCell(item, d);
+                addStatusCell(item, d);
+                item.add(trustStateCell(d, groupLabel).setVisible(section.shows(ServiceKind.Column.TRUST_STATE)));
+                item.add(checksumCell(d, groupLabel).setVisible(section.shows(ServiceKind.Column.CHECKSUM)));
+                item.add(new Label("count", d.getNanopubCountString())
+                        .setVisible(section.shows(ServiceKind.Column.NANOPUB_COUNT)));
+                item.add(syncCell(d).setVisible(section.shows(ServiceKind.Column.SYNC)));
+                item.add(loaderCell(d).setVisible(section.shows(ServiceKind.Column.LOADER)));
+                addHealthCell(item, d);
+                addLocationCell(item, d);
+            }
+        };
+    }
+
+    /**
+     * Build the colour swatch of a section's kind of service, matching its map markers.
+     *
+     * @param section the section
+     * @return the swatch
+     */
+    private static Component swatch(ServiceSection section) {
+        return new WebMarkupContainer("swatch")
+                .add(AttributeModifier.replace("style", "background: " + section.getColor()));
+    }
+
+    /**
+     * Build the header of an optional column, shown only when the section reports that column.
+     *
+     * @param id      the Wicket id of the header cell
+     * @param section the section
+     * @param column  the column the header belongs to
+     * @return the header cell
+     */
+    private static Component columnHeader(String id, ServiceSection section, ServiceKind.Column column) {
+        return new WebMarkupContainer(id).setVisible(section.shows(column));
+    }
+
+    /**
+     * Add the service cell: the shortened URL linking to the service, the test chip and the version.
+     *
+     * @param item the row
+     * @param d    the instance
+     */
+    private static void addServiceCell(ListItem<ServerData> item, ServerData d) {
+        ExternalLink urlLink = new ExternalLink("urllink", d.getServiceId());
+        urlLink.add(AttributeModifier.replace("title", d.getServiceId()));
+        urlLink.add(new Label("url", ServiceCells.shortUrl(d.getServiceId())));
+        item.add(urlLink);
+        item.add(new Label("testchip", "TEST").setVisible(d.isTestInstance()));
+        item.add(new Label("version", "v" + d.getVersion()).setVisible(d.getVersion() != null));
+    }
+
+    /**
+     * Add the status cell as a badge coloured by status.
+     *
+     * @param item the row
+     * @param d    the instance
+     */
+    private static void addStatusCell(ListItem<ServerData> item, ServerData d) {
+        Label status = new Label("status", d.getStatusString());
+        status.add(AttributeModifier.append("class", ServiceCells.statusClass(d.getStatusString())));
+        item.add(status);
+    }
+
+    /**
+     * Build a registry's setting and trust state cell.
+     *
+     * @param d          the instance
+     * @param groupLabel "consensus", "outlier", or null if not compared with peers
+     * @return the cell
+     */
+    private static Component trustStateCell(ServerData d, String groupLabel) {
+        WebMarkupContainer cell = new WebMarkupContainer("trust");
+        cell.add(new Label("setting", ServiceCells.formatSetting(d.getOriginalSetting(), d.getCurrentSetting())));
+        String hash = d.getTrustStateHashShort();
+        Label hashLabel = new Label("trust-hash", hash.isEmpty() ? "no trust state" : hash);
+        if (!hash.isEmpty()) {
+            hashLabel.add(AttributeModifier.append("class", "mono"));
+        }
+        cell.add(hashLabel);
+        cell.add(groupPill("trust-group", groupLabel));
+        return cell;
+    }
+
+    /**
+     * Build a query instance's loaded-nanopub checksum cell.
+     *
+     * @param d          the instance
+     * @param groupLabel "consensus", "outlier", or null if not compared with peers
+     * @return the cell
+     */
+    private static Component checksumCell(ServerData d, String groupLabel) {
+        WebMarkupContainer cell = new WebMarkupContainer("checksum");
+        cell.add(new Label("checksum-hash", d.getLoadedNanopubChecksumShort()));
+        cell.add(groupPill("checksum-group", groupLabel));
+        return cell;
+    }
+
+    /**
+     * Build the pill telling whether an instance agrees with its peers.
+     *
+     * @param id         the Wicket id of the pill
+     * @param groupLabel "consensus", "outlier", or null, in which case the pill is hidden
+     * @return the pill
+     */
+    private static Component groupPill(String id, String groupLabel) {
+        Label pill = new Label(id, groupLabel);
+        pill.add(AttributeModifier.append("class", "outlier".equals(groupLabel) ? "bad" : "ok"));
+        pill.setVisible(groupLabel != null);
+        return pill;
+    }
+
+    /**
+     * Build the sync cell. Any non-zero lag is shown as a problem: unlike the checksum outlier,
+     * it is measured against the instance's own registry, so the instance is genuinely missing
+     * nanopubs rather than merely disagreeing with its peers.
+     *
+     * @param d the instance
+     * @return the cell
+     */
+    private static Component syncCell(ServerData d) {
+        Label sync = new Label("sync", d.getSyncLagString());
+        if (d.isBehind()) {
+            sync.add(AttributeModifier.append("class", "text-bad"));
+        }
+        return sync;
+    }
+
+    /**
+     * Build the loader cell, shown as a problem once the loader has stalled.
+     *
+     * @param d the instance
+     * @return the cell
+     */
+    private static Component loaderCell(ServerData d) {
+        Label loader = new Label("loader", d.getLoaderAgeString());
+        Long loaderAge = d.getLoaderLastSuccessAgeSeconds();
+        if (loaderAge != null && loaderAge > SyncHealth.LOADER_STALL_SECONDS) {
+            loader.add(AttributeModifier.append("class", "text-bad"));
+        }
+        return loader;
+    }
+
+    /**
+     * Add the health cell: OK ratio and response time, with when the instance was last seen OK.
+     * The exact time and the distance from the monitor are in the tooltip.
+     *
+     * @param item the row
+     * @param d    the instance
+     */
+    private static void addHealthCell(ListItem<ServerData> item, ServerData d) {
+        Float okRatio = d.getSuccessRatio();
+        Label ratio = new Label("ok-ratio", ServiceCells.formatOkRatio(okRatio));
+        if (okRatio == null) {
+            ratio.add(AttributeModifier.append("class", "sub"));
+        } else if (ServiceCells.isLowOkRatio(okRatio)) {
+            ratio.add(AttributeModifier.append("class", "text-bad"));
+        }
+        item.add(ratio);
+        item.add(new Label("resp-time", " · " + d.getAvgResponseTimeString())
+                .setVisible(d.getAvgResponseTimeInMs() != null));
+        Label lastSeen = new Label("last-seen", ServiceCells.formatLastSeen(d.getLastSeenDate(), new Date()));
+        String exactTime = d.getLastSeenDate() == null ? "never" : formatDate(d.getLastSeenDate());
+        lastSeen.add(AttributeModifier.replace("title",
+                "Last seen OK " + exactTime + " · " + d.getDistanceString() + " from monitor"));
+        lastSeen.setVisible(okRatio != null);
+        item.add(lastSeen);
+    }
+
+    /**
+     * Add the location cell: city and country with the region below, and the IP address in the tooltip.
+     *
+     * @param item the row
+     * @param d    the instance
+     */
+    private static void addLocationCell(ListItem<ServerData> item, ServerData d) {
+        ServerIpInfo i = d.getIpInfo();
+        Label place = new Label("place", i == null ? "unknown" : i.getCity() + ", " + i.getCountryName());
+        place.add(AttributeModifier.replace("title", i == null ? "unknown IP" : i.getIp()));
+        item.add(place);
+        item.add(new Label("region", i == null ? "" : i.getRegionName()));
     }
 
     /**
@@ -191,43 +384,6 @@ public class MonitorPage extends WebPage {
             }
         }
         return ipAddresses.size();
-    }
-
-    /**
-     * Format the setting/checksum table cell, combining setting and hash:
-     * "<setting> / <hash> (<group>)"
-     * with "<origSetting> → <currentSetting> / ..." when the setting was changed at runtime.
-     * The hash is the registry trust state hash, falling back to the query instance's
-     * loaded-nanopub checksum (query instances have no setting and no consensus group).
-     * Returns "" if neither a setting nor a hash is known.
-     */
-    static String formatTrustHashCell(ServerData d, String groupLabel) {
-        String hashShort = d.getTrustStateHashShort();
-        if (hashShort.isEmpty()) {
-            hashShort = d.getLoadedNanopubChecksumShort();
-        }
-        String current = d.getCurrentSetting();
-        String original = d.getOriginalSetting();
-        if (hashShort.isEmpty() && current == null) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder();
-        if (current != null) {
-            if (original != null && !original.equals(current)) {
-                sb.append(ServerData.shortSetting(original)).append(" → ");
-            }
-            sb.append(ServerData.shortSetting(current));
-        }
-        if (!hashShort.isEmpty()) {
-            if (sb.length() > 0) {
-                sb.append(" / ");
-            }
-            sb.append(hashShort);
-            if (groupLabel != null) {
-                sb.append(" (").append(groupLabel).append(")");
-            }
-        }
-        return sb.toString();
     }
 
 }

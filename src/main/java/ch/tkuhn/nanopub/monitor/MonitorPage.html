@@ -3,8 +3,9 @@
 
 <head>
   <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Nanopub Monitor</title>
-  <link rel="stylesheet" href="style.css?v=4" type="text/css"/>
+  <link rel="stylesheet" href="style.css?v=5" type="text/css"/>
   <link rel="shortcut icon" type="image/x-icon" href="favicon.svg?v=3">
   <script src="world.js"></script>
   <script src="drawmap.js?v=5" defer></script>
@@ -12,56 +13,70 @@
 
 <body>
 
-<h1>Nanopub Monitor</h1>
+<div class="page">
 
-<p wicket:id="counts">
-  <span wicket:id="server-count"></span> <strong>nanopub services</strong>
-  running on approximately <span wicket:id="server-ip-count"></span> <strong>distinct servers</strong>
-</p>
+<header>
+  <h1>Nanopub Monitor</h1>
+  <p class="counts" wicket:id="counts">
+    <strong wicket:id="server-count"></strong> nanopub services
+    running on approximately <strong wicket:id="server-ip-count"></strong> distinct servers
+  </p>
+</header>
 
 <div id="map" wicket:id="map"></div>
 
 <div class="servertable" wicket:id="tablecontainer">
-  <table>
-    <tr>
-      <th>URL</th>
-      <th>Type</th>
-      <th>Version</th>
-      <th>Status</th>
-      <th>Setting / Checksum</th>
-      <th>Nanopubs</th>
-      <th>Sync</th>
-      <th>Loader</th>
-      <th>OK Ratio</th>
-      <th>Resp Time (Dist)</th>
-      <th>Last Seen OK</th>
-      <th>IP Address</th>
-      <th>Region</th>
-      <th>Server Location</th>
-    </tr>
-    <tr wicket:id="rows">
-      <td><a wicket:id="urllink"><span wicket:id="url"></span></a></td>
-      <td><a wicket:id="typelink"><span wicket:id="type"></span></a> <span wicket:id="testchip" class="test-chip">TEST</span></td>
-      <td><span wicket:id="version"></span></td>
-      <td><span wicket:id="status"></span></td>
-      <td><span wicket:id="trusthash"></span></td>
-      <td><span wicket:id="nanopubcount"></span></td>
-      <td><span wicket:id="synclag"></span></td>
-      <td><span wicket:id="loaderage"></span></td>
-      <td><span wicket:id="successratio"></span></td>
-      <td><span wicket:id="resptime"></span></td>
-      <td><span wicket:id="lastseen"></span></td>
-      <td><span wicket:id="ip"></span></td>
-      <td><span wicket:id="region"></span></td>
-      <td><span wicket:id="location"></span></td>
-    </tr>
-  </table>
+  <nav class="summary" aria-label="Service types">
+    <a class="summary-card" wicket:id="summary">
+      <span class="summary-name"><span class="swatch" wicket:id="swatch"></span><span wicket:id="title"></span></span>
+      <span class="summary-tally"><b wicket:id="ok"></b> of <span wicket:id="total"></span> OK<span wicket:id="attention"> · <span class="summary-problems" wicket:id="attention-count"></span></span></span>
+    </a>
+  </nav>
+
+  <section class="service-type" wicket:id="sections">
+    <div class="section-head">
+      <h2><span class="swatch" wicket:id="swatch"></span><span wicket:id="title"></span></h2>
+      <span class="section-meta" wicket:id="instances"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Status</th>
+            <th wicket:id="trust-header">Setting / trust state</th>
+            <th wicket:id="checksum-header">Checksum</th>
+            <th class="num" wicket:id="count-header">Nanopubs</th>
+            <th class="num" wicket:id="sync-header">Sync</th>
+            <th class="num" wicket:id="loader-header">Loader</th>
+            <th>Health</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr wicket:id="rows">
+            <td class="svc"><a wicket:id="urllink"><span wicket:id="url"></span></a><span wicket:id="testchip" class="test-chip">TEST</span><span class="sub" wicket:id="version"></span></td>
+            <td data-label="Status"><span class="badge" wicket:id="status"></span></td>
+            <td data-label="Setting / trust state" wicket:id="trust"><span class="mono" wicket:id="setting"></span><span class="sub"><span wicket:id="trust-hash"></span><span class="pill" wicket:id="trust-group"></span></span></td>
+            <td data-label="Checksum" wicket:id="checksum"><span class="mono" wicket:id="checksum-hash"></span><span class="pill" wicket:id="checksum-group"></span></td>
+            <td class="num" data-label="Nanopubs" wicket:id="count"></td>
+            <td class="num" data-label="Sync" wicket:id="sync"></td>
+            <td class="num" data-label="Loader" wicket:id="loader"></td>
+            <td data-label="Health"><span wicket:id="ok-ratio"></span><span wicket:id="resp-time"></span><span class="sub" wicket:id="last-seen"></span></td>
+            <td data-label="Location"><span wicket:id="place"></span><span class="sub" wicket:id="region"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
 
-<p>
+<p class="exports">
   [ <a href=".csv" rel="alternate" type="text/csv">csv</a> ]
   [ <a href=".json" rel="alternate" type="application/json">json</a> ]
 </p>
+
+</div>
 
 </body>
 
