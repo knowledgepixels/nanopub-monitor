@@ -267,22 +267,22 @@ public class ServerList implements Serializable {
     }
 
     /**
-     * Asks whether a nanopub-registry is running at a candidate URL and says it is a test
-     * instance. Implemented by the scanner, which owns the HTTP client.
+     * Asks whether a service of the candidate's type is running at its URL and says it is a
+     * test instance. Implemented by the scanner, which owns the HTTP client.
      */
     @FunctionalInterface
-    interface RegistryProbe {
+    interface TestInstanceProbe {
 
         /**
-         * @param serviceUrl the candidate registry URL
-         * @return true if a registry answers there and reports itself as a test instance
+         * @param candidate the candidate test instance, with the type of the service it mirrors
+         * @return true if a service of that type answers there and reports itself as a test instance
          */
-        boolean isTestInstance(String serviceUrl);
+        boolean isTestInstance(NanopubService candidate);
     }
 
     /**
      * How long to leave a candidate alone after a probe found nothing there. A discovered test
-     * instance joins the server list for good, so this only paces the misses: most registries
+     * instance joins the server list for good, so this only paces the misses: most services
      * have no test counterpart, and their candidate URL would otherwise be probed every scan.
      */
     private static final long TEST_INSTANCE_PROBE_INTERVAL_MS = 10 * 60 * 1000;
@@ -290,18 +290,20 @@ public class ServerList implements Serializable {
     private static final Map<String, Long> testInstanceProbedAt = new ConcurrentHashMap<>();
 
     /**
-     * Add the test instances of the registries the network announces. A test deployment is
+     * Add the test instances of the registries and Query instances the network announces. A
+     * test deployment is
      * deliberately not announced in a service intro nanopublication — it would then be
      * indistinguishable from a production service to everything reading that list — so it
      * cannot be found by the query above. It is reachable by convention, at the announced
-     * registry's URL with "test." in front of the host, and the probe keeps only those
-     * candidates where a registry answers and reports itself as a test instance. The
-     * convention only proposes where to look; the registry itself decides what is added.
+     * service's URL with "test." in front of the host, and the probe keeps only those
+     * candidates where a service of the same type answers and reports itself as a test
+     * instance. The convention only proposes where to look; the service itself decides what
+     * is added.
      *
      * @param probe the probe to confirm a candidate with
      * @return the number of test instances newly added to the list
      */
-    int addTestInstances(RegistryProbe probe) {
+    int addTestInstances(TestInstanceProbe probe) {
         int newCount = 0;
         for (NanopubService candidate : testInstanceCandidates(servers.keySet())) {
             String url = candidate.getServiceIri().stringValue();
@@ -310,12 +312,12 @@ public class ServerList implements Serializable {
                 continue;
             }
             testInstanceProbedAt.put(url, System.currentTimeMillis());
-            if (!probe.isTestInstance(url)) {
+            if (!probe.isTestInstance(candidate)) {
                 continue;
             }
             if (addIfNew(candidate)) {
                 newCount++;
-                logger.info("Monitoring test instance {}, found from the announced registry it mirrors", url);
+                logger.info("Monitoring test instance {}, found from the announced service it mirrors", url);
             }
         }
         return newCount;
@@ -323,8 +325,9 @@ public class ServerList implements Serializable {
 
     /**
      * The test-instance URLs worth probing, given the services already known: one per announced
-     * registry, minus the ones already in the list and minus the registries that are themselves
-     * test instances. Each candidate keeps the service type of the registry it was derived from.
+     * registry or Query instance, minus the ones already in the list and minus the services that
+     * are themselves test instances. Each candidate keeps the service type of the service it was
+     * derived from.
      *
      * @param known the services already in the list
      * @return the candidates to probe, without duplicates
@@ -337,11 +340,11 @@ public class ServerList implements Serializable {
         List<NanopubService> candidates = new ArrayList<>();
         Set<String> proposed = new HashSet<>();
         for (NanopubService ns : known) {
-            if (!ns.getTypeIri().stringValue().startsWith(NanopubService.NANOPUB_REGISTRY_TYPE_IRI.stringValue())) {
+            if (!mayHaveTestInstance(ns)) {
                 continue;
             }
             String url = testInstanceUrl(ns.getServiceIri().stringValue());
-            // Candidates are deduplicated by URL rather than by service: registries announced
+            // Candidates are deduplicated by URL rather than by service: services announced
             // under two versions of the type IRI share one host, and so one test instance.
             if (url == null || knownUrls.contains(url) || !proposed.add(url)) {
                 continue;
@@ -349,6 +352,18 @@ public class ServerList implements Serializable {
             candidates.add(new NanopubService(vf.createIRI(url), ns.getTypeIri()));
         }
         return candidates;
+    }
+
+    /**
+     * Whether a service is of a kind whose test instances can be discovered: a registry or a
+     * Query instance, the two that say in their responses whether they are test instances.
+     *
+     * @param service the announced service
+     * @return true if its test counterpart is worth probing for
+     */
+    static boolean mayHaveTestInstance(NanopubService service) {
+        return service.hasTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)
+                || service.hasTypePrefix(NanopubService.NANOPUB_QUERY_TYPE_IRI);
     }
 
     /**

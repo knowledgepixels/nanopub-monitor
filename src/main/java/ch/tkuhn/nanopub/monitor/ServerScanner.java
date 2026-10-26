@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 /**
  * A daemon task that periodically scans all registered nanopublication servers to check their status.
@@ -93,7 +94,7 @@ public class ServerScanner implements ICode {
         ServerList.get().refresh();
         stillAlive();
         HttpClient c = newHttpClient();
-        discoverTestInstances(url -> isTestInstance(c, url));
+        discoverTestInstances(candidate -> isTestInstance(c, candidate));
         stillAlive();
         logger.debug("Server list refreshed: {} servers known, beginning tests", ServerList.get().getServerCount());
         testServers(c);
@@ -113,40 +114,57 @@ public class ServerScanner implements ICode {
     }
 
     /**
-     * Look for test instances of the registries the network announces, and add the ones that
-     * answer. Test deployments are not announced in service intro nanopublications, so they
-     * cannot be queried for; the list proposes where to look and the registries themselves
-     * confirm what is found.
+     * Look for test instances of the registries and Query instances the network announces, and
+     * add the ones that answer. Test deployments are not announced in service intro
+     * nanopublications, so they cannot be queried for; the list proposes where to look and the
+     * services themselves confirm what is found.
      *
      * @param probe the probe to confirm a candidate with
      */
-    void discoverTestInstances(ServerList.RegistryProbe probe) {
+    void discoverTestInstances(ServerList.TestInstanceProbe probe) {
         int found = ServerList.get().addTestInstances(probe);
         if (found > 0) {
-            logger.info("Discovered {} registry test instance(s) mirroring announced registries", found);
+            logger.info("Discovered {} test instance(s) mirroring announced services", found);
         }
     }
 
     /**
-     * Probe a candidate URL for a registry that reports itself as a test instance. Anything
-     * else — nothing listening, an error status, or a registry that does not claim to be a
-     * test instance — is not one.
+     * Probe a candidate for a service of its type that reports itself as a test instance: a
+     * registry at its status URL, a Query instance at its own URL. Anything else — nothing
+     * listening, an error status, or a service that does not claim to be a test instance — is
+     * not one.
      *
-     * @param c          the HTTP client to probe with
-     * @param serviceUrl the candidate registry URL
-     * @return true if a registry answers there and reports itself as a test instance
+     * @param c         the HTTP client to probe with
+     * @param candidate the candidate test instance, with the type of the service it mirrors
+     * @return true if a service of that type answers there and reports itself as a test instance
      */
-    boolean isTestInstance(HttpClient c, String serviceUrl) {
-        logger.debug("Probing {}.json for a registry test instance...", serviceUrl);
+    boolean isTestInstance(HttpClient c, NanopubService candidate) {
+        String serviceUrl = candidate.getServiceIri().stringValue();
+        if (candidate.hasTypePrefix(NanopubService.NANOPUB_QUERY_TYPE_IRI)) {
+            return probeForTestInstance(c, serviceUrl, ServerScanner::saysQueryTestInstance);
+        }
+        return probeForTestInstance(c, serviceUrl + ".json", ServerScanner::saysTestInstance);
+    }
+
+    /**
+     * Request a status URL and ask the response whether it comes from a test instance.
+     *
+     * @param c                the HTTP client to probe with
+     * @param statusUrl        the URL to request
+     * @param saysTestInstance whether a response comes from a test instance
+     * @return true if the request went through and the response says so
+     */
+    private boolean probeForTestInstance(HttpClient c, String statusUrl, Predicate<HttpResponse> saysTestInstance) {
+        logger.debug("Probing {} for a test instance...", statusUrl);
         try {
-            HttpResponse resp = c.execute(new HttpGet(serviceUrl + ".json"));
+            HttpResponse resp = c.execute(new HttpGet(statusUrl));
             try {
-                return saysTestInstance(resp);
+                return saysTestInstance.test(resp);
             } finally {
                 EntityUtils.consumeQuietly(resp.getEntity());
             }
         } catch (Exception ex) {
-            logger.debug("No registry test instance at '{}': {}", serviceUrl, ex.getMessage());
+            logger.debug("No test instance at '{}': {}", statusUrl, ex.getMessage());
             return false;
         }
     }

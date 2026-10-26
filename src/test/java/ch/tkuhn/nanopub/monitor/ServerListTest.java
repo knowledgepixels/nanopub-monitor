@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ServerListTest {
 
     private static final String REGISTRY_TYPE = "https://w3id.org/np/o/service/terms/nanopub-registry-1.0";
+    private static final String QUERY_TYPE = "https://w3id.org/np/o/service/terms/nanopub-query-1.1";
 
     private static NanopubService service(String url, String type) {
         return new NanopubService(Values.iri(url), Values.iri(type));
@@ -81,15 +82,24 @@ class ServerListTest {
     }
 
     @Test
-    void onlyRegistriesGetACandidate() {
+    void onlyRegistriesAndQueryInstancesGetACandidate() {
         List<NanopubService> candidates = ServerList.testInstanceCandidates(List.of(
                 service("https://registry.example.org/", REGISTRY_TYPE),
-                service("https://query.example.org/", "https://w3id.org/np/o/service/terms/nanopub-query-1.1"),
+                service("https://query.example.org/", QUERY_TYPE),
                 service("https://nanodash.example.org/", "https://w3id.org/np/o/service/terms/nanodash-2.x"),
                 service("https://np.example.org/", "https://github.com/tkuhn/nanopub-server#service")));
 
-        assertEquals(1, candidates.size(), "Only the registry should be probed, got " + candidates);
-        assertEquals("https://test.registry.example.org/", candidates.getFirst().getServiceIri().stringValue());
+        assertEquals(List.of(service("https://test.registry.example.org/", REGISTRY_TYPE),
+                service("https://test.query.example.org/", QUERY_TYPE)), candidates);
+    }
+
+    @Test
+    void aQueryCandidateKeepsTheQueryType() {
+        List<NanopubService> candidates = ServerList.testInstanceCandidates(
+                List.of(service("https://query.example.org/", QUERY_TYPE)));
+
+        assertEquals(QUERY_TYPE, candidates.getFirst().getTypeIri().stringValue(),
+                "The scanner picks its probe by service type, so the candidate needs the Query type");
     }
 
     @Test

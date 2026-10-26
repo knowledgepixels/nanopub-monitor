@@ -167,6 +167,16 @@ public class NanopubService implements Serializable {
         return "gray";
     }
 
+    /**
+     * Whether this service's type is the given type or a version of it.
+     *
+     * @param typePrefix the type IRI, without a version suffix
+     * @return true if the service type starts with the prefix
+     */
+    public boolean hasTypePrefix(IRI typePrefix) {
+        return typeIri.stringValue().startsWith(typePrefix.stringValue());
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof NanopubService s)) return false;

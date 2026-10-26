@@ -180,7 +180,8 @@ class ServerListStateTest {
         ServerList sl = registries("https://found.example.org/", "https://missed.example.org/");
         TestServers.locate("https://test.found.example.org/", ServerIpInfo.empty);
         List<String> probed = new ArrayList<>();
-        ServerList.RegistryProbe probe = url -> {
+        ServerList.TestInstanceProbe probe = candidate -> {
+            String url = candidate.getServiceIri().stringValue();
             probed.add(url);
             return url.contains("found");
         };
@@ -192,6 +193,20 @@ class ServerListStateTest {
 
         assertEquals(0, sl.addTestInstances(probe));
         assertEquals(2, probed.size(), "Neither candidate should be probed again so soon, got " + probed);
+    }
+
+    /**
+     * A Query instance's confirmed test instance joins the list under the Query type.
+     */
+    @Test
+    void aConfirmedQueryTestInstanceJoinsAsAQueryInstance() {
+        ServerList sl = TestServers.serverList(TestServers.service("https://query.example.org/", QUERY_TYPE));
+        TestServers.locate("https://test.query.example.org/", ServerIpInfo.empty);
+        List<NanopubService> probed = new ArrayList<>();
+
+        assertEquals(1, sl.addTestInstances(candidate -> probed.add(candidate)));
+        assertEquals(List.of(TestServers.service("https://test.query.example.org/", QUERY_TYPE)), probed);
+        assertNotNull(sl.getServerData(TestServers.service("https://test.query.example.org/", QUERY_TYPE)));
     }
 
     /**

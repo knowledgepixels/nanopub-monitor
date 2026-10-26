@@ -120,7 +120,7 @@ public class ServerData implements Serializable {
      * @return true if the service type starts with the prefix, false otherwise
      */
     public boolean hasServiceTypePrefix(IRI prefix) {
-        return service.getTypeIri().stringValue().startsWith(prefix.stringValue());
+        return service.hasTypePrefix(prefix);
     }
 
     /**
