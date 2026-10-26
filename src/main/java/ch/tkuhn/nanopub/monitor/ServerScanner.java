@@ -39,12 +39,26 @@ public class ServerScanner implements ICode {
     private static ServerScanner singleton;
     private static Task scanTask;
     private static Random random = new Random();
+    private static volatile boolean daemonEnabled = true;
+
+    /**
+     * Allow or prevent {@link #initDaemon()} from starting the scanner daemon. Rendering a page
+     * starts the daemon, so tests that render one switch it off to stay off the network.
+     *
+     * @param enabled false to make {@link #initDaemon()} do nothing
+     */
+    static void setDaemonEnabled(boolean enabled) {
+        daemonEnabled = enabled;
+    }
 
     /**
      * Initialize and start the server scanner daemon if not already running.
      * If the existing daemon has not shown signs of life for 10 minutes, it will be restarted.
      */
     public static void initDaemon() {
+        if (!daemonEnabled) {
+            return;
+        }
         if (singleton != null) {
             if (singleton.aliveAtTime + 10 * 60 * 1000 < System.currentTimeMillis()) {
                 singleton.logger.info("Server-scanner daemon has shown no sign of life for over 10 minutes (last alive at {}); restarting it", new Date(singleton.aliveAtTime));
