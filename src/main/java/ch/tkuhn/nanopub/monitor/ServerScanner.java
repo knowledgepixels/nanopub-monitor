@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.Duration;
@@ -147,6 +149,22 @@ public class ServerScanner implements ICode {
             logger.debug("No registry test instance at '{}': {}", serviceUrl, ex.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Read past a table's header row to its first data row. A table that ends before it — no
+     * rows at all, only the header, or a body cut off before the first data row — has none.
+     *
+     * @param csvReader the reader positioned at the start of the table
+     * @return the first data row, or null if the table has none
+     * @throws IOException            if the table cannot be read
+     * @throws CsvValidationException if a row is not valid CSV
+     */
+    static String[] firstDataRow(CSVReader csvReader) throws IOException, CsvValidationException {
+        if (csvReader.readNext() == null) {
+            return null;
+        }
+        return csvReader.readNext();
     }
 
     /**
@@ -283,20 +301,11 @@ public class ServerScanner implements ICode {
                     CSVReader csvReader = null;
                     try {
                         csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
-                        String[] line = null;
-                        int n = 0;
-                        while ((line = csvReader.readNext()) != null) {
-                            n++;
-                            if (n == 1) {
-                                // ignore header line
-                            } else {
-                                if (line[0].matches("[0-9]{5,}")) {
-                                    d.reportTestSuccess(watch.getTime());
-                                } else {
-                                    d.reportTestFailure("BROKEN");
-                                }
-                                break;
-                            }
+                        String[] row = firstDataRow(csvReader);
+                        if (row != null && row[0].matches("[0-9]{5,}")) {
+                            d.reportTestSuccess(watch.getTime());
+                        } else {
+                            d.reportTestFailure("BROKEN");
                         }
                     } catch (Exception ex) {
                         logger.info("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
@@ -409,20 +418,11 @@ public class ServerScanner implements ICode {
                     CSVReader csvReader = null;
                     try {
                         csvReader = new CSVReader(new BufferedReader(new InputStreamReader(resp.getEntity().getContent())));
-                        String[] line = null;
-                        int n = 0;
-                        while ((line = csvReader.readNext()) != null) {
-                            n++;
-                            if (n == 1) {
-                                // ignore header line
-                            } else {
-                                if (line[0].startsWith("http")) {
-                                    d.reportTestSuccess(watch.getTime());
-                                } else {
-                                    d.reportTestFailure("BROKEN");
-                                }
-                                break;
-                            }
+                        String[] row = firstDataRow(csvReader);
+                        if (row != null && row[0].startsWith("http")) {
+                            d.reportTestSuccess(watch.getTime());
+                        } else {
+                            d.reportTestFailure("BROKEN");
                         }
                     } catch (Exception ex) {
                         logger.info("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
