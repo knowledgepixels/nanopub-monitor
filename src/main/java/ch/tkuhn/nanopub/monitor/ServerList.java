@@ -45,6 +45,34 @@ public class ServerList implements Serializable {
         refresh();
     }
 
+    private ServerList(List<NanopubService> services) {
+        services.forEach(ServerList::addIfNew);
+    }
+
+    /**
+     * Replace the singleton with a list of exactly the given services, without asking the registry
+     * API, and forget which test-instance candidates were probed.
+     *
+     * @param services the services to track
+     * @return the new ServerList instance
+     */
+    static synchronized ServerList resetTo(List<NanopubService> services) {
+        servers.clear();
+        testInstanceProbedAt.clear();
+        serverList = new ServerList(services);
+        return serverList;
+    }
+
+    /**
+     * Get the tracked data of the given service.
+     *
+     * @param ns the service
+     * @return its server data, or null if the service is not tracked
+     */
+    ServerData getServerData(NanopubService ns) {
+        return servers.get(ns);
+    }
+
     /**
      * Get an immutable list of all server data entries.
      *

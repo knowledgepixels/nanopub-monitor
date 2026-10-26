@@ -602,6 +602,19 @@ public class ServerData implements Serializable {
     private static final Map<String, Long> ipInfoFetchedAt = new ConcurrentHashMap<>();
 
     /**
+     * Record the geolocation info of a host as if it had just been fetched, so that
+     * {@link #fetchIpInfo(String)} answers from the cache for the next {@link #IP_INFO_TTL_MS}
+     * instead of asking ip-api.com.
+     *
+     * @param host the hostname or IP address
+     * @param info the geolocation info to answer with
+     */
+    static void cacheIpInfo(String host, ServerIpInfo info) {
+        ipInfoMap.put(host, info);
+        ipInfoFetchedAt.put(host, System.currentTimeMillis());
+    }
+
+    /**
      * Fetch IP-based geolocation info for the given host using the ip-api.com service.
      * <p>
      * The result is cached per host and the remote service is queried at most once per host

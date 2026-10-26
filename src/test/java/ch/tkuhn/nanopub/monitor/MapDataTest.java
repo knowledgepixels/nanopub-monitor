@@ -9,6 +9,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MapDataTest {
@@ -65,6 +67,33 @@ class MapDataTest {
     @Test
     void collectPointsOfNoServersIsEmpty() {
         assertEquals(List.of(), MapData.collectPoints(List.of()));
+    }
+
+    /**
+     * Only the servers whose location is known become points.
+     */
+    @Test
+    void collectPointsSkipsServersWithoutALocation() {
+        TestServers.locate("https://router.helsinki.example.org/", TestServers.HELSINKI);
+        NanopubService located = new NanopubService(Values.iri("https://router.helsinki.example.org/"),
+                NanopubService.NANOPUB_ROUTER_TYPE_IRI);
+        ServerList sl = TestServers.serverList(located, router());
+
+        List<Map<String, Object>> points = MapData.collectPoints(sl.getSortedServerData());
+
+        assertEquals(1, points.size());
+        assertEquals("https://router.helsinki.example.org/", points.get(0).get("url"));
+    }
+
+    /**
+     * The singleton serves the points as a resource.
+     */
+    @Test
+    void theSingletonServesThePoints() {
+        TestServers.serverList(router());
+
+        assertSame(MapData.instance(), MapData.instance());
+        assertNotNull(MapData.instance().get());
     }
 
 }

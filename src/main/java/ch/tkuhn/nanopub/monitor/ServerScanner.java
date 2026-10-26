@@ -16,6 +16,7 @@ import org.apache.wicket.util.thread.ICode;
 import org.apache.wicket.util.thread.Task;
 import org.nanopub.extra.server.NanopubServerUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -59,10 +60,13 @@ public class ServerScanner implements ICode {
         scanTask.run(Duration.ofSeconds(MonitorConf.get().getScanFreq()), singleton);
     }
 
-    private Logger logger;
+    private Logger logger = LoggerFactory.getLogger(ServerScanner.class);
     private long aliveAtTime;
 
-    private ServerScanner() {
+    /**
+     * Creates a scanner that logs to its own class logger until {@link #run(Logger)} hands it the task's.
+     */
+    ServerScanner() {
         stillAlive();
     }
 
@@ -79,7 +83,12 @@ public class ServerScanner implements ICode {
         testServers(c);
     }
 
-    private static HttpClient newHttpClient() {
+    /**
+     * Creates the HTTP client a scan cycle probes the servers with.
+     *
+     * @return a client with the scanner's connect and socket timeouts
+     */
+    static HttpClient newHttpClient() {
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(10 * 1000)
                 .setSocketTimeout(15 * 1000)
@@ -104,8 +113,12 @@ public class ServerScanner implements ICode {
      * Probe a candidate URL for a registry that reports itself as a test instance. Anything
      * else — nothing listening, an error status, or a registry that does not claim to be a
      * test instance — is not one.
+     *
+     * @param c          the HTTP client to probe with
+     * @param serviceUrl the candidate registry URL
+     * @return true if a registry answers there and reports itself as a test instance
      */
-    private boolean isTestInstance(HttpClient c, String serviceUrl) {
+    boolean isTestInstance(HttpClient c, String serviceUrl) {
         logger.debug("Probing {}.json for a registry test instance...", serviceUrl);
         try {
             HttpResponse resp = c.execute(new HttpGet(serviceUrl + ".json"));
@@ -183,7 +196,14 @@ public class ServerScanner implements ICode {
         logger.info("Scan cycle complete: tested {} servers", ServerList.get().getServerCount());
     }
 
-    private void testServer(HttpClient c, ServerData d) {
+    /**
+     * Probe one server in the way its service type calls for, and record the outcome and
+     * whatever it reports about itself in its server data.
+     *
+     * @param c the HTTP client to probe with
+     * @param d the server data to probe and update
+     */
+    void testServer(HttpClient c, ServerData d) {
         logger.info("Testing server {}...", d.getServiceId());
         stillAlive();
 //			if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
