@@ -595,11 +595,37 @@ public class ServerData implements Serializable {
      * @return the request URL
      */
     static String ipApiUrl(String host) {
-        return "http://ip-api.com/json/" + host + "?fields=" + IP_API_FIELDS;
+        return ipApiBaseUrl + host + "?fields=" + IP_API_FIELDS;
+    }
+
+    private static final String DEFAULT_IP_API_BASE_URL = "http://ip-api.com/json/";
+
+    private static volatile String ipApiBaseUrl = DEFAULT_IP_API_BASE_URL;
+
+    /**
+     * Send geolocation lookups to another ip-api.com compatible service.
+     *
+     * @param baseUrl the URL the host is appended to, or null for ip-api.com itself
+     */
+    static void setIpApiBaseUrl(String baseUrl) {
+        ipApiBaseUrl = baseUrl == null ? DEFAULT_IP_API_BASE_URL : baseUrl;
     }
 
     private static final Map<String, ServerIpInfo> ipInfoMap = new ConcurrentHashMap<>();
     private static final Map<String, Long> ipInfoFetchedAt = new ConcurrentHashMap<>();
+
+    /**
+     * Record the geolocation info of a host as if it had just been fetched, so that
+     * {@link #fetchIpInfo(String)} answers from the cache for the next {@link #IP_INFO_TTL_MS}
+     * instead of asking ip-api.com.
+     *
+     * @param host the hostname or IP address
+     * @param info the geolocation info to answer with
+     */
+    static void cacheIpInfo(String host, ServerIpInfo info) {
+        ipInfoMap.put(host, info);
+        ipInfoFetchedAt.put(host, System.currentTimeMillis());
+    }
 
     /**
      * Fetch IP-based geolocation info for the given host using the ip-api.com service.

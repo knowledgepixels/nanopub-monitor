@@ -16,6 +16,7 @@ import org.apache.wicket.util.thread.ICode;
 import org.apache.wicket.util.thread.Task;
 import org.nanopub.extra.server.NanopubServerUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -38,12 +39,26 @@ public class ServerScanner implements ICode {
     private static ServerScanner singleton;
     private static Task scanTask;
     private static Random random = new Random();
+    private static volatile boolean daemonEnabled = true;
+
+    /**
+     * Allow or prevent {@link #initDaemon()} from starting the scanner daemon. Rendering a page
+     * starts the daemon, so tests that render one switch it off to stay off the network.
+     *
+     * @param enabled false to make {@link #initDaemon()} do nothing
+     */
+    static void setDaemonEnabled(boolean enabled) {
+        daemonEnabled = enabled;
+    }
 
     /**
      * Initialize and start the server scanner daemon if not already running.
      * If the existing daemon has not shown signs of life for 10 minutes, it will be restarted.
      */
     public static void initDaemon() {
+        if (!daemonEnabled) {
+            return;
+        }
         if (singleton != null) {
             if (singleton.aliveAtTime + 10 * 60 * 1000 < System.currentTimeMillis()) {
                 singleton.logger.info("Server-scanner daemon has shown no sign of life for over 10 minutes (last alive at {}); restarting it", new Date(singleton.aliveAtTime));
@@ -59,10 +74,13 @@ public class ServerScanner implements ICode {
         scanTask.run(Duration.ofSeconds(MonitorConf.get().getScanFreq()), singleton);
     }
 
-    private Logger logger;
+    private Logger logger = LoggerFactory.getLogger(ServerScanner.class);
     private long aliveAtTime;
 
-    private ServerScanner() {
+    /**
+     * Creates a scanner that logs to its own class logger until {@link #run(Logger)} hands it the task's.
+     */
+    ServerScanner() {
         stillAlive();
     }
 
@@ -73,13 +91,18 @@ public class ServerScanner implements ICode {
         ServerList.get().refresh();
         stillAlive();
         HttpClient c = newHttpClient();
-        discoverTestInstances(c);
+        discoverTestInstances(url -> isTestInstance(c, url));
         stillAlive();
         logger.debug("Server list refreshed: {} servers known, beginning tests", ServerList.get().getServerCount());
         testServers(c);
     }
 
-    private static HttpClient newHttpClient() {
+    /**
+     * Creates the HTTP client a scan cycle probes the servers with.
+     *
+     * @return a client with the scanner's connect and socket timeouts
+     */
+    static HttpClient newHttpClient() {
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(10 * 1000)
                 .setSocketTimeout(15 * 1000)
@@ -92,9 +115,11 @@ public class ServerScanner implements ICode {
      * answer. Test deployments are not announced in service intro nanopublications, so they
      * cannot be queried for; the list proposes where to look and the registries themselves
      * confirm what is found.
+     *
+     * @param probe the probe to confirm a candidate with
      */
-    private void discoverTestInstances(HttpClient c) {
-        int found = ServerList.get().addTestInstances(url -> isTestInstance(c, url));
+    void discoverTestInstances(ServerList.RegistryProbe probe) {
+        int found = ServerList.get().addTestInstances(probe);
         if (found > 0) {
             logger.info("Discovered {} registry test instance(s) mirroring announced registries", found);
         }
@@ -104,8 +129,12 @@ public class ServerScanner implements ICode {
      * Probe a candidate URL for a registry that reports itself as a test instance. Anything
      * else — nothing listening, an error status, or a registry that does not claim to be a
      * test instance — is not one.
+     *
+     * @param c          the HTTP client to probe with
+     * @param serviceUrl the candidate registry URL
+     * @return true if a registry answers there and reports itself as a test instance
      */
-    private boolean isTestInstance(HttpClient c, String serviceUrl) {
+    boolean isTestInstance(HttpClient c, String serviceUrl) {
         logger.debug("Probing {}.json for a registry test instance...", serviceUrl);
         try {
             HttpResponse resp = c.execute(new HttpGet(serviceUrl + ".json"));
@@ -183,7 +212,14 @@ public class ServerScanner implements ICode {
         logger.info("Scan cycle complete: tested {} servers", ServerList.get().getServerCount());
     }
 
-    private void testServer(HttpClient c, ServerData d) {
+    /**
+     * Probe one server in the way its service type calls for, and record the outcome and
+     * whatever it reports about itself in its server data.
+     *
+     * @param c the HTTP client to probe with
+     * @param d the server data to probe and update
+     */
+    void testServer(HttpClient c, ServerData d) {
         logger.info("Testing server {}...", d.getServiceId());
         stillAlive();
 //			if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {

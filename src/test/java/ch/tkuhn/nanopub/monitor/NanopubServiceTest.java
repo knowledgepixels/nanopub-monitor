@@ -3,6 +3,8 @@ package ch.tkuhn.nanopub.monitor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Values;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -163,6 +165,35 @@ class NanopubServiceTest {
         assertEquals(nanopubService, restored);
         assertEquals(nanopubService.getServiceIri(), restored.getServiceIri());
         assertEquals(nanopubService.getTypeIri(), restored.getTypeIri());
+    }
+
+    /**
+     * Each known service type has its own colour and spot around a server's map marker.
+     *
+     * @param type    the service type IRI
+     * @param offsetX the expected horizontal offset
+     * @param offsetY the expected vertical offset
+     * @param color   the expected colour
+     */
+    @ParameterizedTest
+    @CsvSource({
+            "https://github.com/tkuhn/nanopub-server#service, 0, 0, orange",
+            "https://github.com/tkuhn/nanopub-monitor#service, 3, -3, lightcoral",
+            "https://github.com/peta-pico/nanopub-services#np-ldf-server, 3, 0, skyblue",
+            "https://github.com/peta-pico/nanopub-services#grlc-np-api, -3, 0, darkseagreen",
+            "https://github.com/peta-pico/signed-nanopub-services#np-ldf-server, 3, 0, #4682B4",
+            "https://github.com/peta-pico/signed-nanopub-services#grlc-np-api, -3, 0, lightseagreen",
+            "https://github.com/peta-pico/signed-nanopub-services#np-sparql-api, 3, 0, mediumpurple",
+            "https://w3id.org/np/o/service/terms/nanopub-query-1.1, 3, 3, #da0b84",
+            "https://w3id.org/np/o/service/terms/nanopub-registry-1.0, -3, 3, #0bc9da",
+            "https://w3id.org/np/o/service/terms/nanodash-2.x, -3, -3, #0b73da"
+    })
+    void eachKnownTypeHasItsOwnMapStyle(String type, int offsetX, int offsetY, String color) {
+        NanopubService service = new NanopubService(Values.iri("https://example.org/"), Values.iri(type));
+
+        assertEquals(offsetX, service.getMapOffsetX());
+        assertEquals(offsetY, service.getMapOffsetY());
+        assertEquals(color, service.getMapColor());
     }
 
 }

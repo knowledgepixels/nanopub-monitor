@@ -26,6 +26,11 @@ public class JsonStatus implements SerializableSupplier<IResource> {
     private static final Gson gson = new GsonBuilder().serializeNulls().create();
     private static final JsonStatus instance = new JsonStatus();
 
+    /**
+     * Get the singleton instance of JsonStatus.
+     *
+     * @return the JsonStatus instance
+     */
     public static JsonStatus instance() {
         return instance;
     }
@@ -33,11 +38,35 @@ public class JsonStatus implements SerializableSupplier<IResource> {
     private JsonStatus() {
     }
 
+    /**
+     * Generates a JSON resource describing the monitor and every server it tracks.
+     *
+     * @return an IResource representing the JSON status
+     */
     @Override
     public IResource get() {
         logger.debug("Generating JSON status export of current server data");
-        ServerList sl = ServerList.get();
+        Map<String, Object> root = statusOf(ServerList.get());
+        List<?> servers = (List<?>) root.get("servers");
 
+        byte[] body;
+        try {
+            body = gson.toJson(root).getBytes(StandardCharsets.UTF_8);
+        } catch (RuntimeException ex) {
+            logger.error("Failed to serialize JSON status for {} servers", servers.size(), ex);
+            throw ex;
+        }
+        logger.debug("JSON status export complete: serialized {} servers, {} bytes", servers.size(), body.length);
+        return new ByteArrayResource("application/json", body);
+    }
+
+    /**
+     * Describes the monitor and every server it tracks, in the shape the JSON export serializes.
+     *
+     * @param sl the server list to describe
+     * @return the status, with the monitor version, the generation time and one entry per server
+     */
+    static Map<String, Object> statusOf(ServerList sl) {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("monitorVersion", MonitorVersion.get());
         root.put("generatedAt", java.time.Instant.now().toString());
@@ -72,16 +101,7 @@ public class JsonStatus implements SerializableSupplier<IResource> {
             servers.add(s);
         }
         root.put("servers", servers);
-
-        byte[] body;
-        try {
-            body = gson.toJson(root).getBytes(StandardCharsets.UTF_8);
-        } catch (RuntimeException ex) {
-            logger.error("Failed to serialize JSON status for {} servers", servers.size(), ex);
-            throw ex;
-        }
-        logger.debug("JSON status export complete: serialized {} servers, {} bytes", servers.size(), body.length);
-        return new ByteArrayResource("application/json", body);
+        return root;
     }
 
 }

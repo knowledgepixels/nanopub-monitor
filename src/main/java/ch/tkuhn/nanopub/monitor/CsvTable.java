@@ -39,11 +39,20 @@ public class CsvTable implements SerializableSupplier<IResource> {
      */
     @Override
     public IResource get() {
+        return new ByteArrayResource("text/csv", toCsv(ServerList.get()).getBytes());
+    }
+
+    /**
+     * Writes one CSV row per server, after a header row.
+     *
+     * @param sl the server list to export
+     * @return the CSV text
+     */
+    static String toCsv(ServerList sl) {
         logger.debug("Generating CSV export of current server data");
         StringWriter sw = new StringWriter();
         CSVWriter w = new CSVWriter(sw);
         w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count", "Registry Nanopub Count", "Sync Lag", "Loader Age (s)", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Region", "Server Location"});
-        ServerList sl = ServerList.get();
         int rowCount = 0;
         for (ServerData sd : sl.getSortedServerData()) {
             Float sr = sd.getSuccessRatio();
@@ -89,7 +98,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
             logger.error("Failed to close CSV writer after writing {} server rows", rowCount, ex);
         }
         logger.debug("CSV export complete: wrote {} server rows", rowCount);
-        return new ByteArrayResource("text/csv", sw.getBuffer().toString().getBytes());
+        return sw.getBuffer().toString();
     }
 
 }
