@@ -589,9 +589,37 @@ class ServerScannerProbeTest {
         reply("/test-registry.json", 200, Map.of("Nanopub-Registry-Test-Instance", "true"), "{}");
         reply("/prod-registry.json", 200, Map.of("Nanopub-Registry-Test-Instance", "false"), "{}");
 
-        assertTrue(scanner.isTestInstance(client, url("/test-registry")));
-        assertFalse(scanner.isTestInstance(client, url("/prod-registry")));
-        assertFalse(scanner.isTestInstance(client, url("/nothing-here")));
+        assertTrue(scanner.isTestInstance(client, TestServers.service(url("/test-registry"), REGISTRY_TYPE)));
+        assertFalse(scanner.isTestInstance(client, TestServers.service(url("/prod-registry"), REGISTRY_TYPE)));
+        assertFalse(scanner.isTestInstance(client, TestServers.service(url("/nothing-here"), REGISTRY_TYPE)));
+    }
+
+    /**
+     * A Query candidate is a test instance if it says so itself, or if the registry it loads
+     * from is one.
+     */
+    @Test
+    void aQueryCandidateIsATestInstanceIfItOrItsRegistrySaysSo() {
+        reply("/staging-query/", 200, Map.of("Nanopub-Query-Test-Instance", "true"), "");
+        reply("/paired-query/", 200, Map.of("Nanopub-Query-Registry-Test-Instance", "true"), "");
+        reply("/prod-query/", 200, Map.of("Nanopub-Query-Test-Instance", "false"), "");
+        reply("/down-query/", 503, Map.of("Nanopub-Query-Test-Instance", "true"), "");
+
+        assertTrue(scanner.isTestInstance(client, TestServers.service(url("/staging-query/"), QUERY_TYPE)));
+        assertTrue(scanner.isTestInstance(client, TestServers.service(url("/paired-query/"), QUERY_TYPE)));
+        assertFalse(scanner.isTestInstance(client, TestServers.service(url("/prod-query/"), QUERY_TYPE)));
+        assertFalse(scanner.isTestInstance(client, TestServers.service(url("/down-query/"), QUERY_TYPE)));
+    }
+
+    /**
+     * A Query candidate is probed at its own URL, not at a registry's status URL.
+     */
+    @Test
+    void aQueryCandidateIsNotTakenForARegistry() {
+        reply("/query/", 200, Map.of(), "");
+        reply("/query/.json", 200, Map.of("Nanopub-Registry-Test-Instance", "true"), "{}");
+
+        assertFalse(scanner.isTestInstance(client, TestServers.service(url("/query/"), QUERY_TYPE)));
     }
 
     /**
@@ -601,7 +629,9 @@ class ServerScannerProbeTest {
      */
     @Test
     void aCandidateNobodyListensAtIsNoTestInstance() throws IOException {
-        assertFalse(scanner.isTestInstance(client, "http://127.0.0.1:" + freePort() + "/registry"));
+        String closed = "http://127.0.0.1:" + freePort() + "/";
+        assertFalse(scanner.isTestInstance(client, TestServers.service(closed + "registry", REGISTRY_TYPE)));
+        assertFalse(scanner.isTestInstance(client, TestServers.service(closed + "query/", QUERY_TYPE)));
     }
 
     /**
@@ -689,7 +719,7 @@ class ServerScannerProbeTest {
         TestServers.locate("https://test.registry.example.org/", ServerIpInfo.empty);
         ServerList sl = TestServers.serverList(TestServers.service("https://registry.example.org/", REGISTRY_TYPE));
 
-        scanner.discoverTestInstances(url -> true);
+        scanner.discoverTestInstances(candidate -> true);
 
         assertEquals(2, sl.getServerCount());
     }
