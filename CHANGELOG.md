@@ -1,3 +1,25 @@
+## [1.8.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.7.0...nanopub-monitor-1.8.0) (2026-10-26)
+
+### Features
+
+* discover test instances of Query services, not only of registries ([e82e64b](https://github.com/knowledgepixels/nanopub-monitor/commit/e82e64b08c98f60ee1ff7eaa3aba5910d02644e0))
+
+### Bug Fixes
+
+* report a grlc or monitor table without a data row as broken ([8bef88a](https://github.com/knowledgepixels/nanopub-monitor/commit/8bef88a9ebb9efb9b5c9328773d5e5e9607cc860)), closes [#87](https://github.com/knowledgepixels/nanopub-monitor/issues/87) [#88](https://github.com/knowledgepixels/nanopub-monitor/issues/88)
+
+### Tests
+
+* **deps:** update dependency jakarta.servlet:jakarta.servlet-api to v6.1.0 ([b370c54](https://github.com/knowledgepixels/nanopub-monitor/commit/b370c54a7a7c42d775b2f2c4eb8fe536201f6a07))
+
+### Build and continuous integration
+
+* **deps:** update dependency org.jacoco:jacoco-maven-plugin to v0.8.16 ([3b5d0ce](https://github.com/knowledgepixels/nanopub-monitor/commit/3b5d0ce741c671303c11d9355ad6138e981c2f8e))
+
+### General maintenance
+
+* setting next snapshot version [skip ci] ([a636866](https://github.com/knowledgepixels/nanopub-monitor/commit/a6368669e3c9b0a88643e633bb4cfe5b86765261))
+
 ## [1.7.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.6.0...nanopub-monitor-1.7.0) (2026-10-26)
 
 ### Features
