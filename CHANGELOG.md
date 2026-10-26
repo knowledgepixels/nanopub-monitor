@@ -1,3 +1,70 @@
+## [1.7.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.6.0...nanopub-monitor-1.7.0) (2026-10-26)
+
+### Features
+
+* add a light/dark mode switch ([dcdb6df](https://github.com/knowledgepixels/nanopub-monitor/commit/dcdb6df77b178a253ab55c9a1afa6dcb4d6b57d1))
+* **config:** read settings from environment variables ([5fb8a42](https://github.com/knowledgepixels/nanopub-monitor/commit/5fb8a425ed05bff3d7ae2614f90176f9edb9fbf1))
+* make the server map interactive ([7678d70](https://github.com/knowledgepixels/nanopub-monitor/commit/7678d7031c9f2cfb2061985453110ad85c88a486))
+* **monitor:** discover the network's registry test instances ([4e2c00c](https://github.com/knowledgepixels/nanopub-monitor/commit/4e2c00c04dffc9ee07d4d1c8adca8933bbcc8d7e)), closes [#62](https://github.com/knowledgepixels/nanopub-monitor/issues/62)
+* **monitor:** show which region of the world each server is in ([a5d1165](https://github.com/knowledgepixels/nanopub-monitor/commit/a5d1165b1ad61ee2b57bbe851b352f1f29f10f53)), closes [#5](https://github.com/knowledgepixels/nanopub-monitor/issues/5)
+* name the exact service type in each section, and open links in a new tab ([5db7e61](https://github.com/knowledgepixels/nanopub-monitor/commit/5db7e61964c62b6c65dbd1e459cf790bbb4f8ef0))
+* scan the nanopub-router service type ([fffdcac](https://github.com/knowledgepixels/nanopub-monitor/commit/fffdcac2426f29e7f1f2b1bf23c1b4f81e2c1e53))
+* show a compact type bar while scrolling down the sections ([ad8ab63](https://github.com/knowledgepixels/nanopub-monitor/commit/ad8ab63a855e2c97fefe76b315a8c6344cd1249d))
+* split the server table into one section per service type ([183d80e](https://github.com/knowledgepixels/nanopub-monitor/commit/183d80e6ec67d1e80a1a0cc07c2af9155234ff0c))
+* treat a self-declared query test instance as a test instance ([f6ca633](https://github.com/knowledgepixels/nanopub-monitor/commit/f6ca633f9760433191858e794e863dc5b6da709a)), closes [knowledgepixels/nanopub-query#200](https://github.com/knowledgepixels/nanopub-query/issues/200)
+
+### Dependency updates
+
+* **core-deps:** update dependency com.google.code.gson:gson to v2.15.0 ([2befd21](https://github.com/knowledgepixels/nanopub-monitor/commit/2befd213ee16be4d5b8a1b6816958cd6013587b0))
+* **core-deps:** update dependency org.junit:junit-bom to v6.1.3 ([970fc68](https://github.com/knowledgepixels/nanopub-monitor/commit/970fc68cca4d94e7cbe069d1d2d30473bf280fda))
+* **core-deps:** update dependency org.nanopub:nanopub to v1.92.0 ([b239d3b](https://github.com/knowledgepixels/nanopub-monitor/commit/b239d3b3276abb0297774b334798e759d2c9df11))
+* **core-deps:** update dependency org.nanopub:nanopub to v1.93.0 ([0738186](https://github.com/knowledgepixels/nanopub-monitor/commit/0738186c99750c393fea7c0ca7a07ba1f42a6f9d))
+* **core-deps:** update dependency org.nanopub:nanopub to v1.94.0 ([d63e9fb](https://github.com/knowledgepixels/nanopub-monitor/commit/d63e9fbcc0276a68608c54149fab45d60f84e327))
+* **core-deps:** update dependency org.nanopub:nanopub to v1.95.0 ([42bde66](https://github.com/knowledgepixels/nanopub-monitor/commit/42bde66bb90c8009d7dac166611680d48251e9bd))
+* **core-deps:** update dependency org.slf4j:slf4j-simple to v2.0.19 ([0aac46f](https://github.com/knowledgepixels/nanopub-monitor/commit/0aac46f104f4dfdeed3498a2dd4256dfb597497b))
+* **core-deps:** update dependency org.slf4j:slf4j-simple to v2.0.20 ([ea94bb2](https://github.com/knowledgepixels/nanopub-monitor/commit/ea94bb2f2d4c6af0ac1ebb649ca90bec314d1b42))
+* **core-deps:** update wicket.version to v10.11.0 ([fdbed52](https://github.com/knowledgepixels/nanopub-monitor/commit/fdbed52cf765ca5311b7dc35bdaf1ad4b0a07aa4))
+* **deps:** update dependency maven to v3.10.0 ([72c28d9](https://github.com/knowledgepixels/nanopub-monitor/commit/72c28d979b5d83c54b1b405fce35a39d5455d62e))
+* **deps:** update tomcat docker tag to v11.0.25 ([8ea7008](https://github.com/knowledgepixels/nanopub-monitor/commit/8ea700819c3247bdbb1d4fce3d7d3cf6d91aa6a7))
+* **deps:** update tomcat docker tag to v11.0.26 ([8fe730c](https://github.com/knowledgepixels/nanopub-monitor/commit/8fe730c30c1a17604186597b025bfedf72a8de8b))
+* **deps:** update tomcat docker tag to v11.0.27 ([4637188](https://github.com/knowledgepixels/nanopub-monitor/commit/463718834bf37e643256979930609fcbb2d11798))
+
+### Bug Fixes
+
+* **docker:** make the application log visible and bounded ([fa9dee3](https://github.com/knowledgepixels/nanopub-monitor/commit/fa9dee3318b4af2742b779c923c1fd9fe6216c2a))
+* don't fail the page when the monitor's own location has no coordinates ([8ca478d](https://github.com/knowledgepixels/nanopub-monitor/commit/8ca478da34e8fbd5ec6d45c7e51b701121414c65))
+* keep the type bar shown after jumping to a section from it ([522d5e6](https://github.com/knowledgepixels/nanopub-monitor/commit/522d5e69ae588ddaf11b7ac72dd6339d3dfbfc3e))
+* make NanopubService serializable ([d44cbdf](https://github.com/knowledgepixels/nanopub-monitor/commit/d44cbdf84a3b3c1ed788737e831c747270c203b5))
+* make the server list safe to use from several threads ([89ec17c](https://github.com/knowledgepixels/nanopub-monitor/commit/89ec17cd66df5cc528ec62002f19c50cf8708d3c))
+* **monitor:** report no consensus when a cohort splits evenly ([b13c5fc](https://github.com/knowledgepixels/nanopub-monitor/commit/b13c5fcd771b8d0e95c1a59f23adad7bc63320ca))
+
+### Documentation
+
+* describe how to run an instance on your own server ([4e97053](https://github.com/knowledgepixels/nanopub-monitor/commit/4e970533b860c6d56f7e69ccc5af044ad8ec4b36))
+
+### Tests
+
+* cover MonitorPage and MonitorApplication with WicketTester ([4ef6bd0](https://github.com/knowledgepixels/nanopub-monitor/commit/4ef6bd006df44d3a25244397c9c88d242664115a))
+* cover the scan cycle, registry refresh and IP lookup ([a9fd424](https://github.com/knowledgepixels/nanopub-monitor/commit/a9fd42450e3cf89a506aacfe6eee976abe5603c0))
+* raise unit test line coverage from 23.5% to 74.2% ([c3ed537](https://github.com/knowledgepixels/nanopub-monitor/commit/c3ed537d8869708d813ea4e308ba14fcb3f912c1))
+
+### Build and continuous integration
+
+* **deps:** lock file maintenance ([3b360e4](https://github.com/knowledgepixels/nanopub-monitor/commit/3b360e47f45fcbcc16dce4d0d3ad6a3cba170b6f))
+* **deps:** update actions/setup-java action to v5.7.0 ([40d256b](https://github.com/knowledgepixels/nanopub-monitor/commit/40d256b494d6f00ff0e08dd537d504c1c4afcea9))
+* **deps:** update actions/setup-java action to v6 ([e7b398e](https://github.com/knowledgepixels/nanopub-monitor/commit/e7b398ec7d85b128258c5e034b711524ddc65812))
+* **deps:** update actions/setup-java action to v6.0.1 ([d87d258](https://github.com/knowledgepixels/nanopub-monitor/commit/d87d258333e26b2531a83faec2916a91f77314c1))
+* **deps:** update actions/setup-java action to v6.1.0 ([cc3bd21](https://github.com/knowledgepixels/nanopub-monitor/commit/cc3bd21b2a80db1a23138b311ce0f635c0b11949))
+* **deps:** update actions/setup-node action to v7.1.0 ([6c4048c](https://github.com/knowledgepixels/nanopub-monitor/commit/6c4048c87337770de46151c2c5deed7d27a86e04))
+* **deps:** update dependency org.apache.maven.plugins:maven-compiler-plugin to v3.16.0 ([7f27eee](https://github.com/knowledgepixels/nanopub-monitor/commit/7f27eeece624685482b275148e27b4c82146a0cd))
+* **deps:** update dependency org.apache.maven.plugins:maven-surefire-plugin to v3.6.0 ([da2f1e4](https://github.com/knowledgepixels/nanopub-monitor/commit/da2f1e4359df216d65d0ef629b6bb7c4f7e7ee6d))
+* **deps:** update dependency org.apache.maven.plugins:maven-surefire-plugin to v3.6.1 ([550a784](https://github.com/knowledgepixels/nanopub-monitor/commit/550a7840ebdb948a761b717a7cc31647bfa914f1))
+
+### General maintenance
+
+* **readme:** add new monitoring instance URL ([6a2a907](https://github.com/knowledgepixels/nanopub-monitor/commit/6a2a907e9b39bdedd1fdcb7fb28fa40afbfe70d8))
+* setting next snapshot version [skip ci] ([d8dacde](https://github.com/knowledgepixels/nanopub-monitor/commit/d8dacdef5687b65538662ff6e56b4642146e58f1))
+
 ## [1.6.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.5.0...nanopub-monitor-1.6.0) (2026-07-31)
 
 ### Features
