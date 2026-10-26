@@ -11,6 +11,7 @@ You can find instances of the Nanopub Monitor here:
 
 - https://monitor.knowledgepixels.com/
 - https://monitor.petapico.org/
+- https://monitor.nanodash.net/
 
 ## What It Serves
 
