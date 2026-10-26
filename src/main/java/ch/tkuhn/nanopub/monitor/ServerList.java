@@ -45,22 +45,48 @@ public class ServerList implements Serializable {
         refresh();
     }
 
-    private ServerList(List<NanopubService> services) {
-        services.forEach(ServerList::addIfNew);
+    /**
+     * Where the list learns which services the network announces. Implemented by the registry API
+     * query outside of tests.
+     */
+    @FunctionalInterface
+    interface ServiceSource {
+
+        /**
+         * @return the announced services
+         * @throws Exception if they cannot be fetched
+         */
+        List<NanopubService> fetchServices() throws Exception;
+    }
+
+    private static final String SERVICES_QUERY_ID = "RAorkjih6fAwpfjDtvCaIyIkqGNHqBOqukILXGbWfhMpI/get-services";
+
+    private static volatile ServiceSource serviceSource = ServerList::fetchServicesFromApi;
+
+    /**
+     * Replace the singleton with a list that learns its services from the given source instead of
+     * the registry API, and forget which test-instance candidates were probed.
+     *
+     * @param source where every later refresh fetches the services from
+     * @return the new ServerList instance, filled from the source
+     */
+    static synchronized ServerList resetTo(ServiceSource source) {
+        servers.clear();
+        testInstanceProbedAt.clear();
+        serviceSource = source;
+        serverList = new ServerList();
+        return serverList;
     }
 
     /**
-     * Replace the singleton with a list of exactly the given services, without asking the registry
-     * API, and forget which test-instance candidates were probed.
+     * Replace the singleton with a list of exactly the given services, as announced by a source
+     * that keeps announcing them.
      *
      * @param services the services to track
      * @return the new ServerList instance
      */
-    static synchronized ServerList resetTo(List<NanopubService> services) {
-        servers.clear();
-        testInstanceProbedAt.clear();
-        serverList = new ServerList(services);
-        return serverList;
+    static ServerList resetTo(List<NanopubService> services) {
+        return resetTo(() -> services);
     }
 
     /**
@@ -237,7 +263,7 @@ public class ServerList implements Serializable {
      * This method updates the internal list of servers.
      */
     public void refresh() {
-        refreshFromApi();
+        refreshFromSource();
     }
 
     /**
@@ -363,21 +389,42 @@ public class ServerList implements Serializable {
         return servers.putIfAbsent(ns, new ServerData(ns, null)) == null;
     }
 
-    private void refreshFromApi() {
-        String queryId = "RAorkjih6fAwpfjDtvCaIyIkqGNHqBOqukILXGbWfhMpI/get-services";
+    private void refreshFromSource() {
         try {
-            ApiResponse resp = QueryAccess.get(new QueryRef(queryId));
             int newCount = 0;
-            for (ApiResponseEntry e : resp.getData()) {
-                NanopubService ns = new NanopubService(vf.createIRI(e.get("service")), vf.createIRI(e.get("serviceType")));
+            for (NanopubService ns : serviceSource.fetchServices()) {
                 if (addIfNew(ns)) {
                     newCount++;
                 }
             }
-            logger.debug("Server list refreshed from '{}': {} new servers found, {} total", queryId, newCount, servers.size());
+            logger.debug("Server list refreshed from '{}': {} new servers found, {} total", SERVICES_QUERY_ID, newCount, servers.size());
         } catch (Exception ex) {
-            logger.error("Could not refresh server list from API query '{}'", queryId, ex);
+            logger.error("Could not refresh server list from API query '{}'", SERVICES_QUERY_ID, ex);
         }
+    }
+
+    /**
+     * Ask the registry API for the services the network announces.
+     *
+     * @return the announced services
+     * @throws Exception if the API cannot be queried
+     */
+    private static List<NanopubService> fetchServicesFromApi() throws Exception {
+        return toServices(QueryAccess.get(new QueryRef(SERVICES_QUERY_ID)));
+    }
+
+    /**
+     * Read the services out of a response to the services query.
+     *
+     * @param resp the API response, with a "service" and a "serviceType" column
+     * @return one service per row
+     */
+    static List<NanopubService> toServices(ApiResponse resp) {
+        List<NanopubService> services = new ArrayList<>();
+        for (ApiResponseEntry e : resp.getData()) {
+            services.add(new NanopubService(vf.createIRI(e.get("service")), vf.createIRI(e.get("serviceType"))));
+        }
+        return services;
     }
 
 }

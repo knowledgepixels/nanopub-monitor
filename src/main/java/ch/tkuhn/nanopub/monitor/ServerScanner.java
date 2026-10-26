@@ -91,7 +91,7 @@ public class ServerScanner implements ICode {
         ServerList.get().refresh();
         stillAlive();
         HttpClient c = newHttpClient();
-        discoverTestInstances(c);
+        discoverTestInstances(url -> isTestInstance(c, url));
         stillAlive();
         logger.debug("Server list refreshed: {} servers known, beginning tests", ServerList.get().getServerCount());
         testServers(c);
@@ -115,9 +115,11 @@ public class ServerScanner implements ICode {
      * answer. Test deployments are not announced in service intro nanopublications, so they
      * cannot be queried for; the list proposes where to look and the registries themselves
      * confirm what is found.
+     *
+     * @param probe the probe to confirm a candidate with
      */
-    private void discoverTestInstances(HttpClient c) {
-        int found = ServerList.get().addTestInstances(url -> isTestInstance(c, url));
+    void discoverTestInstances(ServerList.RegistryProbe probe) {
+        int found = ServerList.get().addTestInstances(probe);
         if (found > 0) {
             logger.info("Discovered {} registry test instance(s) mirroring announced registries", found);
         }

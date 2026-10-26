@@ -595,7 +595,20 @@ public class ServerData implements Serializable {
      * @return the request URL
      */
     static String ipApiUrl(String host) {
-        return "http://ip-api.com/json/" + host + "?fields=" + IP_API_FIELDS;
+        return ipApiBaseUrl + host + "?fields=" + IP_API_FIELDS;
+    }
+
+    private static final String DEFAULT_IP_API_BASE_URL = "http://ip-api.com/json/";
+
+    private static volatile String ipApiBaseUrl = DEFAULT_IP_API_BASE_URL;
+
+    /**
+     * Send geolocation lookups to another ip-api.com compatible service.
+     *
+     * @param baseUrl the URL the host is appended to, or null for ip-api.com itself
+     */
+    static void setIpApiBaseUrl(String baseUrl) {
+        ipApiBaseUrl = baseUrl == null ? DEFAULT_IP_API_BASE_URL : baseUrl;
     }
 
     private static final Map<String, ServerIpInfo> ipInfoMap = new ConcurrentHashMap<>();

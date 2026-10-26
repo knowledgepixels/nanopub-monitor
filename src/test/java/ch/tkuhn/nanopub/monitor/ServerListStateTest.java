@@ -1,6 +1,8 @@
 package ch.tkuhn.nanopub.monitor;
 
 import org.junit.jupiter.api.Test;
+import org.nanopub.extra.services.ApiResponse;
+import org.nanopub.extra.services.ApiResponseEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -200,6 +202,57 @@ class ServerListStateTest {
         ServerList sl = TestServers.serverList();
 
         assertTrue(sl.getMonitorIpInfo().hasCoordinates());
+    }
+
+    /**
+     * A refresh adds the services the source newly announces and keeps the known ones.
+     */
+    @Test
+    void aRefreshAddsNewlyAnnouncedServices() {
+        NanopubService first = TestServers.service("https://first.example.org/", REGISTRY_TYPE);
+        NanopubService second = TestServers.service("https://second.example.org/", REGISTRY_TYPE);
+        TestServers.serverList(first, second);
+        List<NanopubService> announced = new ArrayList<>(List.of(first));
+        ServerList sl = ServerList.resetTo(() -> announced);
+        sl.getServerData(first).reportTestSuccess(5);
+
+        announced.add(second);
+        sl.refresh();
+
+        assertEquals(2, sl.getServerCount());
+        assertEquals("OK", sl.getServerData(first).getStatusString(), "A known service keeps its data");
+    }
+
+    /**
+     * A source that fails leaves the list as it was.
+     */
+    @Test
+    void aFailingSourceLeavesTheListAsItWas() {
+        ServerList sl = registries("https://a.example.org/");
+        ServerList failing = ServerList.resetTo(() -> {
+            throw new IllegalStateException("registry API unreachable");
+        });
+
+        failing.refresh();
+
+        assertEquals(0, failing.getServerCount());
+        assertSame(failing, ServerList.get());
+        assertNotNull(sl);
+    }
+
+    /**
+     * Each row of the services query becomes a service of its type.
+     */
+    @Test
+    void eachRowOfTheServicesQueryBecomesAService() {
+        ApiResponse resp = new ApiResponse();
+        ApiResponseEntry entry = new ApiResponseEntry();
+        entry.add("service", "https://registry.example.org/");
+        entry.add("serviceType", REGISTRY_TYPE);
+        resp.add(entry);
+
+        assertEquals(List.of(TestServers.service("https://registry.example.org/", REGISTRY_TYPE)),
+                ServerList.toServices(resp));
     }
 
 }

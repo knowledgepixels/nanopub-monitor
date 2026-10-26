@@ -8,15 +8,20 @@ import org.eclipse.rdf4j.model.util.Values;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,6 +52,7 @@ class ServerScannerProbeTest {
     }
 
     private final Map<String, Reply> replies = new ConcurrentHashMap<>();
+    private final List<ServerSocket> cutOffServers = new CopyOnWriteArrayList<>();
     private HttpServer server;
     private final ServerScanner scanner = new ServerScanner();
     private final HttpClient client = ServerScanner.newHttpClient();
@@ -64,11 +70,16 @@ class ServerScannerProbeTest {
     }
 
     /**
-     * Stop the local HTTP server.
+     * Stop the local HTTP server and any cut-off servers.
+     *
+     * @throws IOException if a cut-off server cannot be closed
      */
     @AfterEach
-    void stopServer() {
+    void stopServer() throws IOException {
         server.stop(0);
+        for (ServerSocket socket : cutOffServers) {
+            socket.close();
+        }
     }
 
     /**
@@ -123,6 +134,46 @@ class ServerScannerProbeTest {
         ServerData d = TestServers.serverData(url(path), type);
         scanner.testServer(client, d);
         return d;
+    }
+
+    /**
+     * Start a server that answers one request with a body cut off midway: it announces more than
+     * it sends, then closes the connection.
+     *
+     * @param partialBody the part of the body that is sent
+     * @return the server's base URL, with a trailing slash
+     * @throws IOException if the server cannot be started
+     */
+    private String cutOffServer(String partialBody) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(0, 0, InetAddress.getLoopbackAddress());
+        cutOffServers.add(serverSocket);
+        Thread thread = new Thread(() -> answerCutOff(serverSocket, partialBody), "cut-off-server");
+        thread.setDaemon(true);
+        thread.start();
+        return "http://127.0.0.1:" + serverSocket.getLocalPort() + "/";
+    }
+
+    /**
+     * Read one request's headers, then send a response whose body stops short of its announced length.
+     *
+     * @param serverSocket the socket to accept the request on
+     * @param partialBody  the part of the body that is sent
+     */
+    private static void answerCutOff(ServerSocket serverSocket, String partialBody) {
+        try (Socket socket = serverSocket.accept()) {
+            BufferedReader request = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            String line = request.readLine();
+            while (line != null && !line.isEmpty()) {
+                line = request.readLine();
+            }
+            byte[] body = partialBody.getBytes(StandardCharsets.UTF_8);
+            OutputStream out = socket.getOutputStream();
+            out.write(("HTTP/1.1 200 OK\r\nContent-Length: " + (body.length + 1000) + "\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
+            out.write(body);
+            out.flush();
+        } catch (IOException ex) {
+            throw new IllegalStateException("The cut-off server failed", ex);
+        }
     }
 
     /**
@@ -563,6 +614,84 @@ class ServerScannerProbeTest {
         try (ServerSocket socket = new ServerSocket(0, 0, InetAddress.getLoopbackAddress())) {
             return socket.getLocalPort();
         }
+    }
+
+    /**
+     * An LDF server whose body is cut off midway is broken.
+     *
+     * @throws IOException if the cut-off server cannot be started
+     */
+    @Test
+    void anLdfServerCutOffMidwayIsBroken() throws IOException {
+        ServerData d = TestServers.serverData(cutOffServer("<x> <y> <z> .\n") + "ldf/", NanopubService.LDF_SERVICE_TYPE_IRI);
+
+        scanner.testServer(client, d);
+
+        assertEquals("BROKEN", d.getStatusString());
+    }
+
+    /**
+     * Rows that cannot be read as CSV leave the probes reading a table broken.
+     */
+    @Test
+    void unreadableCsvIsBroken() {
+        reply("/grlc/get_nanopub_count", 200, Map.of(), "count\n\"12345");
+        reply("/monitor.csv", 200, Map.of(), "URL,Type\n\"https://unclosed");
+        reply("/sparql/", 200, Map.of(), "x\n\"http://unclosed");
+
+        assertEquals("BROKEN", probe("/grlc/", NanopubService.GRLC_SERVICE_TYPE_IRI).getStatusString());
+        assertEquals("BROKEN", probe("/sparql/", NanopubService.SIGNED_SPARQL_SERVICE_TYPE_IRI).getStatusString());
+        assertEquals("BROKEN", probe("/monitor", NanopubService.NANOPUB_MONITOR_TYPE_IRI).getStatusString());
+    }
+
+    /**
+     * A table with a header row and nothing else is never recorded as a result, so the status
+     * keeps whatever it was before.
+     */
+    @Test
+    void aTableWithOnlyAHeaderRecordsNoResult() {
+        reply("/grlc/get_nanopub_count", 200, Map.of(), "count\n");
+        reply("/monitor.csv", 200, Map.of(), "URL,Type\n");
+
+        ServerData grlc = probe("/grlc/", NanopubService.GRLC_SERVICE_TYPE_IRI);
+        ServerData monitor = probe("/monitor", NanopubService.NANOPUB_MONITOR_TYPE_IRI);
+
+        assertEquals("NOT SEEN", grlc.getStatusString());
+        assertNull(grlc.getSuccessRatio());
+        assertEquals("NOT SEEN", monitor.getStatusString());
+        assertNull(monitor.getSuccessRatio());
+    }
+
+    /**
+     * A scan cycle refreshes the list and tests every server on it.
+     */
+    @Test
+    void aScanCycleTestsEveryServer() {
+        reply("/nanodash/", 200, Map.of("Nanodash-Version", "3.0"), "");
+        reply("/router/status.json", 503, Map.of(), "");
+        NanopubService nanodash = TestServers.service(url("/nanodash/"), NANODASH_TYPE);
+        NanopubService router = TestServers.service(url("/router/"), ROUTER_TYPE);
+        ServerList sl = TestServers.serverList(nanodash, router);
+
+        scanner.run(LoggerFactory.getLogger(ServerScannerProbeTest.class));
+
+        assertEquals(2, sl.getServerCount());
+        assertEquals("OK", sl.getServerData(nanodash).getStatusString());
+        assertEquals("3.0", sl.getServerData(nanodash).getVersion());
+        assertEquals("DOWN", sl.getServerData(router).getStatusString());
+    }
+
+    /**
+     * Discovery adds the test instances the probe confirms.
+     */
+    @Test
+    void discoveryAddsConfirmedTestInstances() {
+        TestServers.locate("https://test.registry.example.org/", ServerIpInfo.empty);
+        ServerList sl = TestServers.serverList(TestServers.service("https://registry.example.org/", REGISTRY_TYPE));
+
+        scanner.discoverTestInstances(url -> true);
+
+        assertEquals(2, sl.getServerCount());
     }
 
 }
