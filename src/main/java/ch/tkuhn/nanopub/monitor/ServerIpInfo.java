@@ -47,6 +47,15 @@ public class ServerIpInfo implements Serializable {
     }
 
     /**
+     * Whether both latitude and longitude are known, so the location can be placed and measured.
+     *
+     * @return true if the coordinates are known
+     */
+    public boolean hasCoordinates() {
+        return lat != null && lon != null;
+    }
+
+    /**
      * Retrieves the name of the country where the server is located.
      *
      * @return the country name

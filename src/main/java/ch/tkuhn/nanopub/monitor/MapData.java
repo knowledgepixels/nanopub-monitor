@@ -79,7 +79,7 @@ public class MapData implements SerializableSupplier<IResource> {
      * @return true if both latitude and longitude are known
      */
     static boolean hasCoordinates(ServerIpInfo ipInfo) {
-        return ipInfo != null && ipInfo.getLatitude() != null && ipInfo.getLongitude() != null;
+        return ipInfo != null && ipInfo.hasCoordinates();
     }
 
     /**
