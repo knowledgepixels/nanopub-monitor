@@ -645,21 +645,66 @@ class ServerScannerProbeTest {
     }
 
     /**
-     * A table with a header row and nothing else is never recorded as a result, so the status
-     * keeps whatever it was before.
+     * A table with a header row and nothing else is broken.
      */
     @Test
-    void aTableWithOnlyAHeaderRecordsNoResult() {
+    void aTableWithOnlyAHeaderIsBroken() {
         reply("/grlc/get_nanopub_count", 200, Map.of(), "count\n");
         reply("/monitor.csv", 200, Map.of(), "URL,Type\n");
 
         ServerData grlc = probe("/grlc/", NanopubService.GRLC_SERVICE_TYPE_IRI);
         ServerData monitor = probe("/monitor", NanopubService.NANOPUB_MONITOR_TYPE_IRI);
 
-        assertEquals("NOT SEEN", grlc.getStatusString());
-        assertNull(grlc.getSuccessRatio());
-        assertEquals("NOT SEEN", monitor.getStatusString());
-        assertNull(monitor.getSuccessRatio());
+        assertEquals("BROKEN", grlc.getStatusString());
+        assertEquals(0.0f, grlc.getSuccessRatio());
+        assertEquals("BROKEN", monitor.getStatusString());
+        assertEquals(0.0f, monitor.getSuccessRatio());
+    }
+
+    /**
+     * An empty body has no table at all, and is broken.
+     */
+    @Test
+    void anEmptyTableIsBroken() {
+        reply("/grlc/get_nanopub_count", 200, Map.of(), "");
+        reply("/monitor.csv", 200, Map.of(), "");
+
+        assertEquals("BROKEN", probe("/grlc/", NanopubService.GRLC_SERVICE_TYPE_IRI).getStatusString());
+        assertEquals("BROKEN", probe("/monitor", NanopubService.NANOPUB_MONITOR_TYPE_IRI).getStatusString());
+    }
+
+    /**
+     * A server that was fine on the last scan and now answers with only a header no longer
+     * shows its old status.
+     */
+    @Test
+    void aServerThatStopsSendingRowsLosesItsOkStatus() {
+        reply("/grlc/get_nanopub_count", 200, Map.of(), "count\n12345678\n");
+        ServerData grlc = probe("/grlc/", NanopubService.GRLC_SERVICE_TYPE_IRI);
+        assertEquals("OK", grlc.getStatusString());
+
+        reply("/grlc/get_nanopub_count", 200, Map.of(), "count\n");
+        scanner.testServer(client, grlc);
+
+        assertEquals("BROKEN", grlc.getStatusString());
+        assertEquals(0.5f, grlc.getSuccessRatio());
+    }
+
+    /**
+     * A table cut off before its first data row is broken.
+     *
+     * @throws IOException if the cut-off servers cannot be started
+     */
+    @Test
+    void aTableCutOffBeforeItsFirstRowIsBroken() throws IOException {
+        ServerData grlc = TestServers.serverData(cutOffServer("count\n"), NanopubService.GRLC_SERVICE_TYPE_IRI);
+        ServerData monitor = TestServers.serverData(cutOffServer("URL,Type\n"), NanopubService.NANOPUB_MONITOR_TYPE_IRI);
+
+        scanner.testServer(client, grlc);
+        scanner.testServer(client, monitor);
+
+        assertEquals("BROKEN", grlc.getStatusString());
+        assertEquals("BROKEN", monitor.getStatusString());
     }
 
     /**
