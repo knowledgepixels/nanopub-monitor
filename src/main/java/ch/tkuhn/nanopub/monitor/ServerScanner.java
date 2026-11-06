@@ -11,6 +11,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.HttpClientUtils;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.wicket.util.thread.ICode;
@@ -93,19 +95,28 @@ public class ServerScanner implements ICode {
         logger.info("Starting nanopub server scan cycle");
         ServerList.get().refresh();
         stillAlive();
-        HttpClient c = newHttpClient();
-        discoverTestInstances(candidate -> isTestInstance(c, candidate));
-        stillAlive();
-        logger.debug("Server list refreshed: {} servers known, beginning tests", ServerList.get().getServerCount());
-        testServers(c);
+        // A fresh client per cycle, so each probe's response time includes setting up the
+        // connection, as it always has. Closing it at the end closes every connection it opened;
+        // an abandoned client keeps them until it is garbage-collected, which left thousands of
+        // sockets in CLOSE_WAIT (#103).
+        CloseableHttpClient c = newHttpClient();
+        try {
+            discoverTestInstances(candidate -> isTestInstance(c, candidate));
+            stillAlive();
+            logger.debug("Server list refreshed: {} servers known, beginning tests", ServerList.get().getServerCount());
+            testServers(c);
+        } finally {
+            HttpClientUtils.closeQuietly(c);
+        }
     }
 
     /**
-     * Creates the HTTP client a scan cycle probes the servers with.
+     * Creates the HTTP client a scan cycle probes the servers with. The caller closes it when
+     * the cycle is over.
      *
      * @return a client with the scanner's connect and socket timeouts
      */
-    static HttpClient newHttpClient() {
+    static CloseableHttpClient newHttpClient() {
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(10 * 1000)
                 .setSocketTimeout(15 * 1000)
@@ -250,7 +261,9 @@ public class ServerScanner implements ICode {
 
     /**
      * Probe one server in the way its service type calls for, and record the outcome and
-     * whatever it reports about itself in its server data.
+     * whatever it reports about itself in its server data. Each probe releases its response in
+     * a finally block, whether it read the body or not: a response that is not released keeps
+     * its connection leased and open (#103).
      *
      * @param c the HTTP client to probe with
      * @param d the server data to probe and update
@@ -305,12 +318,13 @@ public class ServerScanner implements ICode {
 //			} else
         if (d.hasServiceType(NanopubService.GRLC_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_GRLC_SERVICE_TYPE_IRI)) {
             logger.info("Trying to access {}get_nanopub_count...", d.getServiceId());
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(d.getServiceId() + "get_nanopub_count");
                 get.setHeader("Accept", "text/csv");
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 if (!wasSuccessful(resp)) {
                     logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
@@ -337,15 +351,18 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         } else if (d.hasServiceType(NanopubService.LDF_SERVICE_TYPE_IRI) || d.hasServiceType(NanopubService.SIGNED_LDF_SERVICE_TYPE_IRI)) {
             logger.info("Trying to access {}?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication...", d.getServiceId());
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(d.getServiceId() + "?object=http%3A%2F%2Fwww.nanopub.org%2Fnschema%23Nanopublication");
                 get.setHeader("Accept", "application/n-quads");
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 if (!wasSuccessful(resp)) {
                     logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
@@ -378,16 +395,19 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         } else if (d.hasServiceType(NanopubService.SIGNED_SPARQL_SERVICE_TYPE_IRI)) {
             String urlSuffix = "?query=select+%3Fx+where+%7B%3Fx+a+%3Fc%7D+limit+100&format=text%2Fcsv";
             logger.info("Trying to access {}{}...", d.getServiceId(), urlSuffix);
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(d.getServiceId() + urlSuffix);
                 get.setHeader("Accept", "text/csv");
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 if (!wasSuccessful(resp)) {
                     logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
@@ -418,15 +438,18 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         } else if (d.hasServiceType(NanopubService.NANOPUB_MONITOR_TYPE_IRI)) {
             logger.info("Trying to access {}.csv...", d.getServiceId());
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(d.getServiceId() + ".csv");
                 get.setHeader("Accept", "text/csv");
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 if (!wasSuccessful(resp)) {
                     logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
@@ -454,14 +477,17 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) {
             logger.info("Probing registry status at {}.json...", d.getServiceId());
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(d.getServiceId() + ".json");
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 if (!wasSuccessful(resp)) {
                     logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
@@ -488,14 +514,17 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_QUERY_TYPE_IRI)) {
             logger.info("Probing query status at {}...", d.getServiceId());
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(d.getServiceId());
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 if (!wasSuccessful(resp)) {
                     logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
@@ -529,15 +558,18 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         } else if (d.hasServiceType(NanopubService.NANOPUB_SERVER_TYPE_IRI)) {
             logger.info("Probing nanopub-server info at {}...", d.getServiceId());
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(d.getServiceId());
                 get.setHeader("Accept", "application/json");
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 if (!wasSuccessful(resp)) {
                     logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
@@ -557,14 +589,17 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         } else if (d.hasServiceTypePrefix(NanopubService.NANODASH_TYPE_IRI)) {
             logger.info("Probing Nanodash status at {}...", d.getServiceId());
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(d.getServiceId());
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 if (!wasSuccessful(resp)) {
                     logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
@@ -576,6 +611,8 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         } else if (d.hasServiceTypePrefix(NanopubService.NANOPUB_ROUTER_TYPE_IRI)) {
             // Probed at /status.json, which answers 200 with a JSON summary for as long as the
@@ -587,11 +624,12 @@ public class ServerScanner implements ICode {
             // that verdict from the very service that was down.
             String statusUrl = d.getServiceId() + (d.getServiceId().endsWith("/") ? "" : "/") + "status.json";
             logger.info("Probing router status at {}...", statusUrl);
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(statusUrl);
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 // Read before the status check: the router sets the version header on every
                 // response, so a failing instance can still be identified by build.
@@ -605,14 +643,17 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         } else {
             logger.info("Trying to access {}...", d.getServiceId());
+            HttpResponse resp = null;
             try {
                 HttpGet get = new HttpGet(d.getServiceId());
                 StopWatch watch = new StopWatch();
                 watch.start();
-                HttpResponse resp = c.execute(get);
+                resp = c.execute(get);
                 watch.stop();
                 if (!wasSuccessful(resp)) {
                     logger.info("Test failed for server '{}'. HTTP code {}", d.getServiceId(), resp.getStatusLine().getStatusCode());
@@ -623,6 +664,8 @@ public class ServerScanner implements ICode {
             } catch (Exception ex) {
                 logger.error("Test failed for server '{}': {}", d.getServiceId(), ex.getMessage(), ex);
                 d.reportTestFailure("INACCESSIBLE");
+            } finally {
+                HttpClientUtils.closeQuietly(resp);
             }
         }
     }

@@ -2,7 +2,10 @@ package ch.tkuhn.nanopub.monitor;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Values;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -55,7 +59,7 @@ class ServerScannerProbeTest {
     private final List<ServerSocket> cutOffServers = new CopyOnWriteArrayList<>();
     private HttpServer server;
     private final ServerScanner scanner = new ServerScanner();
-    private final HttpClient client = ServerScanner.newHttpClient();
+    private final CloseableHttpClient client = ServerScanner.newHttpClient();
 
     /**
      * Start a local HTTP server that answers each path with the reply registered for it, or 404.
@@ -70,12 +74,13 @@ class ServerScannerProbeTest {
     }
 
     /**
-     * Stop the local HTTP server and any cut-off servers.
+     * Close the client, and stop the local HTTP server and any cut-off servers.
      *
-     * @throws IOException if a cut-off server cannot be closed
+     * @throws IOException if the client or a cut-off server cannot be closed
      */
     @AfterEach
     void stopServer() throws IOException {
+        client.close();
         server.stop(0);
         for (ServerSocket socket : cutOffServers) {
             socket.close();
@@ -735,6 +740,77 @@ class ServerScannerProbeTest {
 
         assertEquals("BROKEN", grlc.getStatusString());
         assertEquals("BROKEN", monitor.getStatusString());
+    }
+
+    /**
+     * Every probe hands its connection back, whatever the answer, so that no connection stays
+     * open after a scan cycle (#103). The client here holds a single connection: a probe that
+     * keeps it makes the next probe wait for the pool until it gives up, which shows as
+     * INACCESSIBLE.
+     */
+    @Test
+    void everyProbeHandsItsConnectionBack() {
+        record Case(String path, IRI type, String status) {
+        }
+        reply("/ok/grlc/get_nanopub_count", 200, Map.of(), "count\n12345678\n");
+        reply("/ok/ldf/", 200, Map.of(), lines("<x> <y> <http://www.nanopub.org/nschema#Nanopublication> .", 100));
+        reply("/ok/sparql/", 200, Map.of(), lines("http://example.org/x", 100));
+        reply("/ok/monitor.csv", 200, Map.of(), "URL,Type\nhttps://registry.example.org/,x\n");
+        reply("/ok/registry.json", 200, Map.of(), "{}");
+        reply("/ok/server/", 200, Map.of(), "{\"nextNanopubNo\": 77}");
+        reply("/ok/query/", 200, Map.of("Nanopub-Query-Status", "READY"), "<html>query</html>");
+        reply("/ok/nanodash/", 200, Map.of(), "<html>nanodash</html>");
+        reply("/ok/router/status.json", 200, Map.of(), "{}");
+        reply("/ok/other/", 200, Map.of(), "hello");
+        reply("/down/grlc/get_nanopub_count", 500, Map.of(), "error");
+        reply("/down/ldf/", 503, Map.of(), "error");
+        reply("/down/sparql/", 500, Map.of(), "error");
+        reply("/down/monitor.csv", 404, Map.of(), "error");
+        reply("/down/registry.json", 502, Map.of(), "error");
+        reply("/down/server/", 500, Map.of(), "error");
+        reply("/down/query/", 500, Map.of(), "error");
+        reply("/down/nanodash/", 500, Map.of(), "error");
+        reply("/down/router/status.json", 503, Map.of(), "error");
+        reply("/down/other/", 404, Map.of(), "error");
+        List<Case> cases = List.of(
+                new Case("/ok/grlc/", NanopubService.GRLC_SERVICE_TYPE_IRI, "OK"),
+                new Case("/ok/ldf/", NanopubService.LDF_SERVICE_TYPE_IRI, "OK"),
+                new Case("/ok/sparql/", NanopubService.SIGNED_SPARQL_SERVICE_TYPE_IRI, "OK"),
+                new Case("/ok/monitor", NanopubService.NANOPUB_MONITOR_TYPE_IRI, "OK"),
+                new Case("/ok/registry", REGISTRY_TYPE, "OK"),
+                new Case("/ok/server/", NanopubService.NANOPUB_SERVER_TYPE_IRI, "OK"),
+                new Case("/ok/query/", QUERY_TYPE, "OK"),
+                new Case("/ok/nanodash/", NANODASH_TYPE, "OK"),
+                new Case("/ok/router/", ROUTER_TYPE, "OK"),
+                new Case("/ok/other/", UNKNOWN_TYPE, "OK"),
+                new Case("/down/grlc/", NanopubService.GRLC_SERVICE_TYPE_IRI, "DOWN"),
+                new Case("/down/ldf/", NanopubService.LDF_SERVICE_TYPE_IRI, "DOWN"),
+                new Case("/down/sparql/", NanopubService.SIGNED_SPARQL_SERVICE_TYPE_IRI, "DOWN"),
+                new Case("/down/monitor", NanopubService.NANOPUB_MONITOR_TYPE_IRI, "DOWN"),
+                new Case("/down/registry", REGISTRY_TYPE, "DOWN"),
+                new Case("/down/server/", NanopubService.NANOPUB_SERVER_TYPE_IRI, "DOWN"),
+                new Case("/down/query/", QUERY_TYPE, "DOWN"),
+                new Case("/down/nanodash/", NANODASH_TYPE, "DOWN"),
+                new Case("/down/router/", ROUTER_TYPE, "DOWN"),
+                new Case("/down/other/", UNKNOWN_TYPE, "DOWN"));
+        PoolingHttpClientConnectionManager pool = new PoolingHttpClientConnectionManager();
+        pool.setMaxTotal(1);
+        pool.setDefaultMaxPerRoute(1);
+        RequestConfig waitBriefly = RequestConfig.custom().setConnectionRequestTimeout(1000).build();
+        try (CloseableHttpClient oneConnection = HttpClients.custom()
+                .setConnectionManager(pool)
+                .setDefaultRequestConfig(waitBriefly)
+                .build()) {
+            for (Case c : cases) {
+                for (int attempt = 1; attempt <= 2; attempt++) {
+                    ServerData d = TestServers.serverData(url(c.path()), c.type());
+                    scanner.testServer(oneConnection, d);
+                    assertEquals(c.status(), d.getStatusString(), "attempt " + attempt + " at " + c.path());
+                }
+            }
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     /**
