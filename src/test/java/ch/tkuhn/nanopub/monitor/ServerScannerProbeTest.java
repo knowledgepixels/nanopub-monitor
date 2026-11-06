@@ -2,12 +2,13 @@ package ch.tkuhn.nanopub.monitor;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Values;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
@@ -40,6 +41,7 @@ class ServerScannerProbeTest {
     private static final IRI NANODASH_TYPE = Values.iri("https://w3id.org/np/o/service/terms/nanodash-2.x");
     private static final IRI ROUTER_TYPE = Values.iri("https://w3id.org/np/o/service/terms/nanopub-router-0.x");
     private static final IRI UNKNOWN_TYPE = Values.iri("https://example.org/services#something-else");
+    private static final int MORE_PROBES_THAN_CONNECTIONS_PER_HOST = 3;
 
     /**
      * What the local server answers on one path.
@@ -55,7 +57,7 @@ class ServerScannerProbeTest {
     private final List<ServerSocket> cutOffServers = new CopyOnWriteArrayList<>();
     private HttpServer server;
     private final ServerScanner scanner = new ServerScanner();
-    private final HttpClient client = ServerScanner.newHttpClient();
+    private final CloseableHttpClient client = ServerScanner.newHttpClient();
 
     /**
      * Start a local HTTP server that answers each path with the reply registered for it, or 404.
@@ -70,12 +72,13 @@ class ServerScannerProbeTest {
     }
 
     /**
-     * Stop the local HTTP server and any cut-off servers.
+     * Stop the local HTTP server and any cut-off servers, and close the client.
      *
-     * @throws IOException if a cut-off server cannot be closed
+     * @throws IOException if a cut-off server or the client cannot be closed
      */
     @AfterEach
     void stopServer() throws IOException {
+        client.close();
         server.stop(0);
         for (ServerSocket socket : cutOffServers) {
             socket.close();
@@ -542,6 +545,30 @@ class ServerScannerProbeTest {
 
         assertEquals("DOWN", d.getStatusString());
         assertEquals("0.3.0", d.getVersion());
+    }
+
+    /**
+     * Probes that look only at the status and headers still hand their connection back, so a
+     * host keeps being probed after more probes than the pool holds connections for it. The
+     * local server is one host for every probe here.
+     */
+    @Test
+    @Timeout(60)
+    void probesLookingOnlyAtHeadersReleaseTheirConnection() {
+        reply("/router/status.json", 200, Map.of("Nanopub-Router-Version", "0.3.0"), "{\"status\":\"ok\"}");
+        reply("/query/", 200, Map.of("Nanopub-Query-Status", "READY"), "<html>query</html>");
+        reply("/nanodash/", 200, Map.of("Nanodash-Version", "4.0.0"), "<html>nanodash</html>");
+        reply("/other/", 200, Map.of(), "hello");
+        reply("/failing/", 500, Map.of(), "an error page");
+
+        for (int i = 0; i < MORE_PROBES_THAN_CONNECTIONS_PER_HOST; i++) {
+            assertEquals("OK", probe("/router/", ROUTER_TYPE).getStatusString());
+            assertEquals("OK", probe("/query/", QUERY_TYPE).getStatusString());
+            assertEquals("OK", probe("/nanodash/", NANODASH_TYPE).getStatusString());
+            assertEquals("OK", probe("/other/", UNKNOWN_TYPE).getStatusString());
+            assertEquals("DOWN", probe("/failing/", UNKNOWN_TYPE).getStatusString());
+            assertEquals("DOWN", probe("/failing/", QUERY_TYPE).getStatusString());
+        }
     }
 
     /**
