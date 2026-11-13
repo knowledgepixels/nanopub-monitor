@@ -175,6 +175,7 @@
     var details = createElement("span", "map-popover-details");
     var title = createElement("span", "map-popover-url", shortUrl(point.url));
     if (point.testInstance) {
+      button.classList.add("test-instance");
       title.appendChild(createElement("span", "test-chip", "TEST"));
     }
     details.appendChild(title);

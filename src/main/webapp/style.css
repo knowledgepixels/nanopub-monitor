@@ -446,11 +446,24 @@ th.num, td.num {
   padding: 0 5px;
   border: 1px solid currentColor;
   border-radius: 3px;
-  color: var(--warn);
+  color: var(--idle);
   font-size: 10.5px;
   font-weight: bold;
   letter-spacing: 0.04em;
   vertical-align: 1px;
+}
+
+/* Test instances are greyed out, so the production instances stand out. */
+tr.test-instance td,
+.map-popover-entry.test-instance {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+tr.test-instance:hover td,
+.map-popover-entry.test-instance:hover,
+.map-popover-entry.test-instance:focus-visible {
+  opacity: 0.8;
 }
 
 .ok {

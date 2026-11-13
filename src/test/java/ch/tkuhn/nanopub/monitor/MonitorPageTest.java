@@ -110,11 +110,12 @@ class MonitorPageTest {
         tester.assertLabel("tablecontainer:summary:0:attention:attention-count", "1 need attention");
         tester.assertLabel("tablecontainer:summary-bar:0:tally", "3/3");
         tester.assertLabel("tablecontainer:sections:0:instances", "3 instances");
-        tester.assertLabel(REGISTRY_ROWS + "0:urllink:url", "c.example.org");
-        tester.assertVisible(REGISTRY_ROWS + "0:testchip");
-        tester.assertVisible(REGISTRY_ROWS + "0:row-type");
-        tester.assertLabel(REGISTRY_ROWS + "0:trust:setting", "RAoriginal → RAcurrent0");
-        tester.assertLabel(REGISTRY_ROWS + "0:trust:trust-group", "outlier");
+        tester.assertLabel(REGISTRY_ROWS + "2:urllink:url", "c.example.org");
+        tester.assertVisible(REGISTRY_ROWS + "2:testchip");
+        tester.assertVisible(REGISTRY_ROWS + "2:row-type");
+        tester.assertLabel(REGISTRY_ROWS + "2:trust:setting", "RAoriginal → RAcurrent0");
+        tester.assertLabel(REGISTRY_ROWS + "2:trust:trust-group", "outlier");
+        assertEquals(1, markup.split("class=\"test-instance\"", -1).length - 1, "Only the test instance's row is greyed out");
         tester.assertLabel(REGISTRY_ROWS + "1:trust:trust-group", "consensus");
         tester.assertLabel(REGISTRY_ROWS + "1:trust:trust-hash", "hash-majorit");
         tester.assertLabel(REGISTRY_ROWS + "1:version", "v1.4.0");
