@@ -1,3 +1,29 @@
+## [1.9.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.8.0...nanopub-monitor-1.9.0) (2026-11-13)
+
+### Features
+
+* grey out test instances and list them last ([158da8f](https://github.com/knowledgepixels/nanopub-monitor/commit/158da8fb8d86db66c9e8b2d0bec62d6d028be8e5))
+
+### Dependency updates
+
+* **core-deps:** update dependency org.nanopub:nanopub to v1.95.1 ([1057931](https://github.com/knowledgepixels/nanopub-monitor/commit/1057931e200ab198aca5d1ef913b53e65d2fdea5))
+* **deps:** update nanopub to 1.96.0, Wicket to 11.0.0, and Jetty plugin to 12.1.15 ([71b79a7](https://github.com/knowledgepixels/nanopub-monitor/commit/71b79a7b0eef9495d7bd649bd129704cc3813cb1))
+* **deps:** update wicket.version to v10.12.0 ([7f096c1](https://github.com/knowledgepixels/nanopub-monitor/commit/7f096c10ed0990c6038979ffd0c1dba315d1cd0d))
+
+### Bug Fixes
+
+* close each scan cycle's HTTP client and release every probe response ([5bcabaf](https://github.com/knowledgepixels/nanopub-monitor/commit/5bcabaf5d64042ef0d7a389a7a998dc8b5f4aa49)), closes [#103](https://github.com/knowledgepixels/nanopub-monitor/issues/103)
+
+### Build and continuous integration
+
+* **deps:** update actions/setup-java action to v6.2.0 ([667de10](https://github.com/knowledgepixels/nanopub-monitor/commit/667de10e5ea61ee30ce6a0aedf9e7d683dccd41d))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.158 ([891490a](https://github.com/knowledgepixels/nanopub-monitor/commit/891490a9bfc3ac8687d5dc12071f7e9fd9298d8a))
+* **renovate:** rebase PRs only on conflict ([4ea0b9f](https://github.com/knowledgepixels/nanopub-monitor/commit/4ea0b9fe8c7445ae12686a4cff1760cc9c49a4af))
+
+### General maintenance
+
+* setting next snapshot version [skip ci] ([0ad3214](https://github.com/knowledgepixels/nanopub-monitor/commit/0ad321453a554a5d4277adcbf8e1d62ef20a2e6d))
+
 ## [1.8.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.7.0...nanopub-monitor-1.8.0) (2026-10-26)
 
 ### Features
