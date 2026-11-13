@@ -32,7 +32,7 @@ class MonitorPageTest {
     void setUp() {
         ServerScanner.setDaemonEnabled(false);
         TestServers.serverList();
-        tester = new WicketTester(new MonitorApplication());
+        tester = new WicketTester(new MonitorApplication(), "src/main/webapp");
     }
 
     /**
@@ -124,6 +124,30 @@ class MonitorPageTest {
         tester.assertVisible("tablecontainer:sections:0:trust-header");
         tester.assertInvisible("tablecontainer:sections:0:sync-header");
         assertTrue(markup.contains("href=\"#nanopub-registry\""), "The summary card links to its section");
+    }
+
+    /**
+     * Every static asset the page refers to carries the version of its current content, so a
+     * changed file is never served from a browser's cache.
+     */
+    @Test
+    void assetReferencesCarryTheVersionOfTheirContent() throws Exception {
+        String markup = render();
+
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("(?:href|src)=\"([\\w./-]+\\.(?:css|js|svg))(\\?v=(\\w+))?\"").matcher(markup);
+        int references = 0;
+        while (m.find()) {
+            if (m.group(1).contains("wicket/resource/")) {
+                // Wicket versions the resources it serves itself.
+                continue;
+            }
+            references++;
+            try (java.io.InputStream content = java.nio.file.Files.newInputStream(java.nio.file.Path.of("src/main/webapp", m.group(1)))) {
+                assertEquals(AssetVersions.versionOf(content), m.group(3), "Version of " + m.group(1));
+            }
+        }
+        assertEquals(6, references, "The stylesheet, the icon and the four scripts");
     }
 
     /**
