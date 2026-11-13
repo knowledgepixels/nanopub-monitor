@@ -107,7 +107,7 @@
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
       <version>${jakarta.servlet-api.version}</version>
-      <scope>test</scope>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
   <build>
