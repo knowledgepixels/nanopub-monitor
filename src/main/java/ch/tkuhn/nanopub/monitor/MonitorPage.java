@@ -214,6 +214,9 @@ public class MonitorPage extends WebPage {
                 ServerData d = item.getModelObject();
                 String groupLabel = ServerList.get().getHashGroupLabel(d);
                 item.add(AttributeModifier.replace("data-service", d.getServiceId()));
+                if (d.isTestInstance()) {
+                    item.add(AttributeModifier.append("class", "test-instance"));
+                }
                 addServiceCell(item, d);
                 item.add(new Label("row-type", d.getService().getTypeLabel()).setVisible(section.hasSeveralTypes()));
                 addStatusCell(item, d);

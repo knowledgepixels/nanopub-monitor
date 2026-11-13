@@ -110,7 +110,8 @@ public class ServerList implements Serializable {
 
     /**
      * Get a sorted list of all server data entries.
-     * Sorting is done by service type IRI (descending), then by IP address (ascending), then by service IRI (ascending).
+     * Sorting is done by service type IRI (descending), then test instances after the others,
+     * then by IP address (ascending), then by service IRI (ascending).
      *
      * @return sorted list of ServerData
      */
@@ -121,6 +122,9 @@ public class ServerList implements Serializable {
             public int compare(ServerData o1, ServerData o2) {
                 if (!o1.getService().getTypeIri().equals(o2.getService().getTypeIri())) {
                     return o2.getService().getTypeIri().toString().compareTo(o1.getService().getTypeIri().toString());
+                }
+                if (o1.isTestInstance() != o2.isTestInstance()) {
+                    return o1.isTestInstance() ? 1 : -1;
                 }
                 if (o1.getIpInfo() == null || o1.getIpInfo().getIp() == null) return -1;
                 if (o2.getIpInfo() == null || o2.getIpInfo().getIp() == null) return 1;

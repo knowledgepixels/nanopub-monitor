@@ -118,7 +118,8 @@ public class ServiceSection implements Serializable {
     }
 
     /**
-     * Sort instances so that those needing attention come first, then by URL.
+     * Sort instances so that test instances come last, and within each of the two groups those
+     * needing attention come first, then by URL.
      *
      * @param servers    the instances
      * @param serverList the server list, used to tell consensus from outliers
@@ -126,7 +127,8 @@ public class ServiceSection implements Serializable {
      */
     private static List<ServerData> sortedByAttention(List<ServerData> servers, ServerList serverList) {
         List<ServerData> sorted = new ArrayList<>(servers);
-        sorted.sort(Comparator.comparing((ServerData sd) -> !needsAttention(sd, serverList))
+        sorted.sort(Comparator.comparing(ServerData::isTestInstance)
+                .thenComparing(sd -> !needsAttention(sd, serverList))
                 .thenComparing(ServerData::getServiceId));
         return sorted;
     }

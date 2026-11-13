@@ -111,6 +111,30 @@ class ServiceSectionTest {
     }
 
     /**
+     * Test instances come last, even when they need attention and the others do not.
+     */
+    @Test
+    void testInstancesComeLast() {
+        String type = "https://w3id.org/np/o/service/terms/nanopub-registry-1.0";
+        NanopubService downTest = TestServers.service("https://a.example.org/", type);
+        NanopubService healthyTest = TestServers.service("https://b.example.org/", type);
+        NanopubService healthy = TestServers.service("https://c.example.org/", type);
+        NanopubService down = TestServers.service("https://d.example.org/", type);
+        ServerList sl = TestServers.serverList(downTest, healthyTest, healthy, down);
+        sl.getServerData(downTest).setTestInstance(true);
+        sl.getServerData(downTest).reportTestFailure("DOWN");
+        sl.getServerData(healthyTest).setTestInstance(true);
+        sl.getServerData(healthyTest).reportTestSuccess(10);
+        sl.getServerData(healthy).reportTestSuccess(10);
+        sl.getServerData(down).reportTestFailure("DOWN");
+
+        ServiceSection section = sectionsOf(sl).get(0);
+
+        assertEquals(List.of("https://d.example.org/", "https://c.example.org/", "https://a.example.org/",
+                "https://b.example.org/"), section.getServers().stream().map(ServerData::getServiceId).toList());
+    }
+
+    /**
      * Two versions of a type share one section, which names them both.
      */
     @Test

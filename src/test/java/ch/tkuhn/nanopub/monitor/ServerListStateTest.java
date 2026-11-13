@@ -101,6 +101,23 @@ class ServerListStateTest {
     }
 
     /**
+     * Within a type, test instances are sorted after the others.
+     */
+    @Test
+    void testInstancesAreSortedLastWithinTheirType() {
+        ServerList sl = TestServers.serverList(
+                TestServers.service("https://a.example.org/", REGISTRY_TYPE),
+                TestServers.service("https://b.example.org/", REGISTRY_TYPE),
+                TestServers.service("https://query.example.org/", QUERY_TYPE));
+        sl.getServerData(TestServers.service("https://a.example.org/", REGISTRY_TYPE)).setTestInstance(true);
+
+        List<String> order = new ArrayList<>();
+        sl.getSortedServerData().forEach(sd -> order.add(sd.getServiceId()));
+
+        assertEquals(List.of("https://b.example.org/", "https://a.example.org/", "https://query.example.org/"), order);
+    }
+
+    /**
      * Within a setting, the registry reporting a different hash from the majority is the outlier.
      */
     @Test
