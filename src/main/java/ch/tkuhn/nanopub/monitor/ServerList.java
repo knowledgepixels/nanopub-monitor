@@ -147,13 +147,15 @@ public class ServerList implements Serializable {
     }
 
     /**
-     * Get the trust state hash reported by the largest number of registries running the
-     * given setting. Used as the consensus value within a setting cohort: registries with
-     * the same setting but a different hash are flagged as outliers. Comparing hashes
-     * across different settings is not meaningful, so the calculation is scoped per setting.
+     * Get the hash reported by the largest number of registries running the given setting,
+     * where a registry's hash is the one it is compared by
+     * ({@link ServerData#getComparableTrustHash()}: its trust network hash, or its trust state
+     * hash if it reports no network hash). Used as the consensus value within a setting cohort:
+     * registries with the same setting but a different hash are flagged as outliers. Comparing
+     * hashes across different settings is not meaningful, so the calculation is scoped per setting.
      *
      * @param setting the registry setting (trusty URI); if null, the result is null
-     * @return the majority trust state hash for the cohort, or null if the cohort has none
+     * @return the majority hash for the cohort, or null if the cohort has none
      */
     public String getMajorityTrustStateHashForSetting(String setting) {
         if (setting == null) return null;
@@ -161,7 +163,7 @@ public class ServerList implements Serializable {
         for (ServerData sd : servers.values()) {
             if (!sd.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) continue;
             if (!setting.equals(sd.getCurrentSetting())) continue;
-            String h = sd.getTrustStateHash();
+            String h = sd.getComparableTrustHash();
             if (h == null) continue;
             counts.merge(h, 1, Integer::sum);
         }
@@ -215,7 +217,8 @@ public class ServerList implements Serializable {
 
     /**
      * Classify a server's reported hash against the consensus of its cohort. For registries, the
-     * hash is the trust state hash and the cohort is registries running the same setting; for query
+     * hash is the trust network hash (or, for a registry that reports none, the trust state hash)
+     * and the cohort is registries running the same setting; for query
      * instances, the hash is the loaded-nanopub checksum and the cohort is query instances with the
      * same test-instance status. Returns "consensus" if it matches the cohort majority, "outlier"
      * if it differs, or null if the server reports no comparable hash (or, for registries, no
@@ -226,7 +229,7 @@ public class ServerList implements Serializable {
      */
     public String getHashGroupLabel(ServerData sd) {
         if (sd.hasServiceTypePrefix(NanopubService.NANOPUB_REGISTRY_TYPE_IRI)) {
-            String h = sd.getTrustStateHash();
+            String h = sd.getComparableTrustHash();
             if (h == null) return null;
             String setting = sd.getCurrentSetting();
             if (setting == null) return null;

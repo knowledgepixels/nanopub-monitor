@@ -495,6 +495,7 @@ public class ServerScanner implements ICode {
                 } else {
                     d.setVersion(headerValue(resp, "Nanopub-Registry-Version"));
                     d.setTrustStateHash(headerValue(resp, "Nanopub-Registry-Trust-State-Hash"));
+                    d.setTrustNetworkHash(presentOrNull(headerValue(resp, "Nanopub-Registry-Trust-Network-Hash")));
                     d.setNanopubCount(parseLongOrNull(headerValue(resp, "Nanopub-Registry-Nanopub-Count")));
                     d.setTestInstance("true".equalsIgnoreCase(headerValue(resp, "Nanopub-Registry-Test-Instance")));
                     try (Reader r = new InputStreamReader(resp.getEntity().getContent())) {
@@ -678,6 +679,17 @@ public class ServerScanner implements ICode {
     private static String headerValue(HttpResponse resp, String name) {
         Header h = resp.getFirstHeader(name);
         return h == null ? null : h.getValue();
+    }
+
+    /**
+     * Return a header value only if it holds one. A registry leaves this header out when it has
+     * nothing to report, but one that sent it empty, or as the text "null", has nothing either.
+     */
+    private static String presentOrNull(String s) {
+        if (s == null || s.isBlank() || "null".equals(s.trim())) {
+            return null;
+        }
+        return s.trim();
     }
 
     private static Long parseLongOrNull(String s) {

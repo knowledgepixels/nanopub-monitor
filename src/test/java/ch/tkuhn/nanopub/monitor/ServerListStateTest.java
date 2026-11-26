@@ -118,6 +118,31 @@ class ServerListStateTest {
     }
 
     /**
+     * Registries that compute the same trust network agree, whatever they publish about it: a
+     * registry that separates the two reports a trust state hash of its own, which depends on its
+     * local configuration, and a registry on an older version reports the network as its trust
+     * state hash.
+     */
+    @Test
+    void registriesWithTheSameNetworkAgreeAcrossVersionsAndConfigurations() {
+        ServerList sl = registries("https://a.example.org/", "https://b.example.org/", "https://c.example.org/",
+                "https://d.example.org/");
+        ServerData a = report(sl, "https://a.example.org/", "RAsetting", "state-of-a");
+        a.setTrustNetworkHash("network-1");
+        ServerData b = report(sl, "https://b.example.org/", "RAsetting", "state-of-b");
+        b.setTrustNetworkHash("network-1");
+        ServerData older = report(sl, "https://c.example.org/", "RAsetting", "network-1");
+        ServerData other = report(sl, "https://d.example.org/", "RAsetting", "state-of-d");
+        other.setTrustNetworkHash("network-2");
+
+        assertEquals("network-1", sl.getMajorityTrustStateHashForSetting("RAsetting"));
+        assertEquals("consensus", sl.getHashGroupLabel(a));
+        assertEquals("consensus", sl.getHashGroupLabel(b));
+        assertEquals("consensus", sl.getHashGroupLabel(older));
+        assertEquals("outlier", sl.getHashGroupLabel(other));
+    }
+
+    /**
      * Within a setting, the registry reporting a different hash from the majority is the outlier.
      */
     @Test

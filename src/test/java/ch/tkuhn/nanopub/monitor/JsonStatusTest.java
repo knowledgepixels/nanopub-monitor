@@ -42,6 +42,27 @@ class JsonStatusTest {
     }
 
     /**
+     * A registry is described with both of its hashes: the one it is compared by, and the key
+     * of the trust state it currently publishes.
+     */
+    @Test
+    void aRegistryIsDescribedWithBothHashes() {
+        NanopubService service = TestServers.service("https://registry.example.org/",
+                "https://w3id.org/np/o/service/terms/nanopub-registry-1.0");
+        ServerList sl = TestServers.serverList(service);
+        ServerData sd = sl.getServerData(service);
+        sd.setCurrentSetting("RAsetting");
+        sd.setTrustStateHash("state-1");
+        sd.setTrustNetworkHash("network-1");
+
+        Map<String, Object> entry = servers(JsonStatus.statusOf(sl)).get(0);
+
+        assertEquals("state-1", entry.get("trustStateHash"));
+        assertEquals("network-1", entry.get("trustNetworkHash"));
+        assertEquals("consensus", entry.get("hashGroup"));
+    }
+
+    /**
      * A tested query instance is described with what it reported.
      */
     @Test

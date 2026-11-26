@@ -336,10 +336,46 @@ class ServerScannerProbeTest {
         assertEquals("OK", d.getStatusString());
         assertEquals("1.4.0", d.getVersion());
         assertEquals("abcdef0123456789", d.getTrustStateHash());
+        assertNull(d.getTrustNetworkHash(), "an older registry reports no network hash");
         assertEquals(4200L, d.getNanopubCount());
         assertTrue(d.isTestInstance());
         assertEquals("RAcurrent", d.getCurrentSetting());
         assertNull(d.getOriginalSetting());
+    }
+
+    /**
+     * A registry that separates the trust network from the trust state reports both hashes.
+     */
+    @Test
+    void aRegistryReportsItsTrustNetworkHash() {
+        reply("/registry.json", 200, Map.of(
+                "Nanopub-Registry-Status", "ready",
+                "Nanopub-Registry-Trust-State-Hash", "abcdef0123456789",
+                "Nanopub-Registry-Trust-Network-Hash", " 9876543210fedcba "),
+                "{}");
+
+        ServerData d = probe("/registry", REGISTRY_TYPE);
+
+        assertEquals("abcdef0123456789", d.getTrustStateHash());
+        assertEquals("9876543210fedcba", d.getTrustNetworkHash());
+        assertEquals("9876543210fedcba", d.getComparableTrustHash());
+    }
+
+    /**
+     * A network hash header without a value is the same as none.
+     */
+    @Test
+    void anEmptyTrustNetworkHashCountsAsNone() {
+        reply("/registry.json", 200, Map.of(
+                "Nanopub-Registry-Status", "ready",
+                "Nanopub-Registry-Trust-State-Hash", "abcdef0123456789",
+                "Nanopub-Registry-Trust-Network-Hash", "null"),
+                "{}");
+
+        ServerData d = probe("/registry", REGISTRY_TYPE);
+
+        assertNull(d.getTrustNetworkHash());
+        assertEquals("abcdef0123456789", d.getComparableTrustHash());
     }
 
     /**

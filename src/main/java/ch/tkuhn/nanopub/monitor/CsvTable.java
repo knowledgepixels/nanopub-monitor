@@ -52,7 +52,7 @@ public class CsvTable implements SerializableSupplier<IResource> {
         logger.debug("Generating CSV export of current server data");
         StringWriter sw = new StringWriter();
         CSVWriter w = new CSVWriter(sw);
-        w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count", "Registry Nanopub Count", "Sync Lag", "Loader Age (s)", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Region", "Server Location"});
+        w.writeNext(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting", "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count", "Registry Nanopub Count", "Sync Lag", "Loader Age (s)", "OK Ratio", "Resp Time", "Dist", "Last Seen OK", "IP Address", "Region", "Server Location", "Trust Network Hash"});
         int rowCount = 0;
         for (ServerData sd : sl.getSortedServerData()) {
             Float sr = sd.getSuccessRatio();
@@ -88,6 +88,8 @@ public class CsvTable implements SerializableSupplier<IResource> {
                     (i == null ? "" : i.getIp()),
                     (i == null ? "" : i.getRegionName()),
                     (i == null ? "" : i.getCity() + ", " + i.getCountryName()),
+                    // Appended last, so the columns before it keep their positions.
+                    (sd.getTrustNetworkHash() == null ? "" : sd.getTrustNetworkHash()),
             });
             rowCount++;
         }
