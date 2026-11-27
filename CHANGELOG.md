@@ -1,3 +1,29 @@
+## [1.10.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.9.0...nanopub-monitor-1.10.0) (2026-11-27)
+
+### Features
+
+* compare registries by their trust network hash ([2d63b75](https://github.com/knowledgepixels/nanopub-monitor/commit/2d63b757dbbaa34ca4aa6169a1763db03f626440)), closes [#223](https://github.com/knowledgepixels/nanopub-monitor/issues/223)
+
+### Dependency updates
+
+* **core-deps:** update dependency org.nanopub:nanopub to v1.97.1 ([c262670](https://github.com/knowledgepixels/nanopub-monitor/commit/c262670ebb104e1b7f1f93e0ed19e3157380b643))
+* **deps:** update dependency maven to v3.10.1 ([e765230](https://github.com/knowledgepixels/nanopub-monitor/commit/e7652305d2228f19b9f917047299859830667756))
+* **deps:** update dependency maven to v3.10.2 ([943ee72](https://github.com/knowledgepixels/nanopub-monitor/commit/943ee72e7361f379a0396bd8e29d7fa654e4c69b))
+
+### Bug Fixes
+
+* version static assets by content so changes need no hard refresh ([cd2c6cd](https://github.com/knowledgepixels/nanopub-monitor/commit/cd2c6cd8a413c7688a8bd63d85ec343506fddd5a))
+
+### Build and continuous integration
+
+* **deps:** update actions/setup-java action to v6.3.0 ([1a19261](https://github.com/knowledgepixels/nanopub-monitor/commit/1a19261172ecf810df81887c67566ff61c2cb187))
+* **deps:** update dependency node to v24.22.3 ([b011488](https://github.com/knowledgepixels/nanopub-monitor/commit/b01148805a1804ea9f1cfc050987cd23bc280a12))
+* **deps:** update dependency semantic-release-preconfigured-conventional-commits to v1.1.159 ([556294a](https://github.com/knowledgepixels/nanopub-monitor/commit/556294a65105132cffb2b15af01afc4d862853e6))
+
+### General maintenance
+
+* setting next snapshot version [skip ci] ([ba1bc10](https://github.com/knowledgepixels/nanopub-monitor/commit/ba1bc101aa069245ad68dad802b956cb61a11823))
+
 ## [1.9.0](https://github.com/knowledgepixels/nanopub-monitor/compare/nanopub-monitor-1.8.0...nanopub-monitor-1.9.0) (2026-11-13)
 
 ### Features
