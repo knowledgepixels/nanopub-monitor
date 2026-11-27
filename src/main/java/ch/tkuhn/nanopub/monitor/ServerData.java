@@ -35,6 +35,7 @@ public class ServerData implements Serializable {
     private String distanceString = null;
     private long totalResponseTime = 0;
     private String trustStateHash;
+    private String trustNetworkHash;
     private String loadedNanopubChecksum;
     private String currentSetting;
     private String originalSetting;
@@ -274,6 +275,52 @@ public class ServerData implements Serializable {
      */
     public String getTrustStateHashShort() {
         return shortHash(trustStateHash);
+    }
+
+    /**
+     * Get the Nanopub-Registry trust network hash last reported by this server, or null if it
+     * reported none. A registry reports it from the version on that separates it from the trust
+     * state hash; it covers the trust paths alone and is the value meant for comparing registries.
+     *
+     * @return the trust network hash, or null
+     */
+    public String getTrustNetworkHash() {
+        return trustNetworkHash;
+    }
+
+    /**
+     * Set the Nanopub-Registry trust network hash for this server.
+     *
+     * @param hash the trust network hash (null if the server reports none)
+     */
+    public void setTrustNetworkHash(String hash) {
+        this.trustNetworkHash = hash;
+    }
+
+    /**
+     * Get the hash by which this registry is compared with others running the same setting: the
+     * trust network hash if it reports one, otherwise the trust state hash.
+     * <p>
+     * The trust state hash of a registry that reports a network hash also covers what is local to
+     * it (quotas, loading progress), so two registries can differ in it while computing the same
+     * network. A registry on an older version reports only the trust state hash, which there is
+     * still computed from the trust paths and equals the network hash of a newer registry with
+     * the same network, as long as the older one has no granted quotas and no capped or still
+     * loading accounts. The fallback therefore keeps a cohort on mixed versions comparable.
+     *
+     * @return the hash to compare, or null if the server reported neither
+     */
+    public String getComparableTrustHash() {
+        return trustNetworkHash != null ? trustNetworkHash : trustStateHash;
+    }
+
+    /**
+     * Get a short prefix of the hash this registry is compared by, or "" if unknown.
+     *
+     * @return the short hash, or ""
+     */
+    public String getComparableTrustHashShort() {
+        return shortHash(getComparableTrustHash());
     }
 
     /**

@@ -45,7 +45,7 @@ class CsvTableTest {
         assertArrayEquals(new String[]{"URL", "Type", "Version", "Test Instance", "Status", "Current Setting",
                 "Original Setting", "Trust State Hash", "Hash Group", "Loaded Nanopub Checksum", "Nanopub Count",
                 "Registry Nanopub Count", "Sync Lag", "Loader Age (s)", "OK Ratio", "Resp Time", "Dist",
-                "Last Seen OK", "IP Address", "Region", "Server Location"}, rows.get(0));
+                "Last Seen OK", "IP Address", "Region", "Server Location", "Trust Network Hash"}, rows.get(0));
     }
 
     /**
@@ -64,6 +64,7 @@ class CsvTableTest {
         sd.setCurrentSetting("RAcurrent");
         sd.setOriginalSetting("RAoriginal");
         sd.setTrustStateHash("hash-1");
+        sd.setTrustNetworkHash("network-1");
         sd.setNanopubCount(42L);
         sd.reportTestSuccess(30);
 
@@ -72,7 +73,7 @@ class CsvTableTest {
         assertArrayEquals(new String[]{"https://registry.helsinki.example.org/", REGISTRY_TYPE, "1.4.0", "true",
                 "OK", "RAcurrent", "RAoriginal", "hash-1", "consensus", "", "42", "", "", "", "1.0", "30",
                 String.valueOf(sd.getDistanceInKm()), MonitorPage.formatDate(sd.getLastSeenDate()), "192.0.2.20",
-                "Europe", "Helsinki, Finland"}, row);
+                "Europe", "Helsinki, Finland", "network-1"}, row);
     }
 
     /**
@@ -88,7 +89,7 @@ class CsvTableTest {
 
         assertArrayEquals(new String[]{"https://nanodash.example.org/", NANODASH_TYPE, "", "", "NOT SEEN", "", "",
                 "", "", "", "", "", "", "", "", "", "", "", "unknown IP", "unknown region",
-                "unknown city, unknown country"}, row);
+                "unknown city, unknown country", ""}, row);
     }
 
     /**

@@ -292,7 +292,8 @@ public class MonitorPage extends WebPage {
     private static Component trustStateCell(ServerData d, String groupLabel) {
         WebMarkupContainer cell = new WebMarkupContainer("trust");
         cell.add(new Label("setting", ServiceCells.formatSetting(d.getOriginalSetting(), d.getCurrentSetting())));
-        String hash = d.getTrustStateHashShort();
+        // The hash the registry is compared by, which is what the pill next to it is about.
+        String hash = d.getComparableTrustHashShort();
         Label hashLabel = new Label("trust-hash", hash.isEmpty() ? "no trust state" : hash);
         if (!hash.isEmpty()) {
             hashLabel.add(AttributeModifier.append("class", "mono"));

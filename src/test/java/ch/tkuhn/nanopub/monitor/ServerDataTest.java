@@ -102,6 +102,27 @@ class ServerDataTest {
     }
 
     /**
+     * A registry is compared by its trust network hash, and by its trust state hash as long as it
+     * reports no network hash, which is the case for a registry on an older version.
+     */
+    @Test
+    void aRegistryIsComparedByItsNetworkHashIfItReportsOne() {
+        assertNull(registry.getComparableTrustHash());
+        assertEquals("", registry.getComparableTrustHashShort());
+
+        registry.setTrustStateHash("state-0123456789abcdef");
+        assertEquals("state-0123456789abcdef", registry.getComparableTrustHash());
+
+        registry.setTrustNetworkHash("network-0123456789abcdef");
+        assertEquals("network-0123456789abcdef", registry.getComparableTrustHash());
+        assertEquals("network-0123", registry.getComparableTrustHashShort());
+        assertEquals("state-0123456789abcdef", registry.getTrustStateHash(), "the trust state hash is kept as reported");
+
+        registry.setTrustNetworkHash(null);
+        assertEquals("state-0123456789abcdef", registry.getComparableTrustHash());
+    }
+
+    /**
      * Settings are shortened to ten characters for display, and unknown ones to nothing.
      */
     @Test
